@@ -1,7 +1,7 @@
 # WorkshopOS
 
 Workshop management SaaS for independent automobile workshops: customer check-in to vehicle delivery.
-Built in gated phases — see the build plan. **Phase 1 (foundations) is complete.**
+Built in gated phases — see the build plan. **Phases 1 (foundations) and 2 (customers and vehicles) are complete.**
 
 ## Stack
 
@@ -20,14 +20,16 @@ npm run dev           # http://localhost:3000
 
 Emails (sign-up confirmation, password reset) go to the local Mailpit inbox at http://127.0.0.1:55324.
 
-Local test accounts created during Phase 1 verification (local database only):
+`npm run db:seed-dev` creates local-only test accounts in an "Alpha Motors" workshop (safe to re-run,
+refuses to run against anything but the local stack):
 
 | Email | Password | Role |
 | --- | --- | --- |
-| owner.alpha@example.test | Workshop2026new | Owner of Alpha Motors |
-| mechanic.alpha@example.test | Garage2026test | Mechanic at Alpha Motors |
+| owner.alpha@example.test | Workshop2026new | Owner |
+| advisor.alpha@example.test | Garage2026test | Service advisor |
+| mechanic.alpha@example.test | Garage2026test | Mechanic |
 
-`npm run db:reset` wipes the local database and re-applies migrations (these accounts are then gone).
+`npm run db:reset` wipes the local database and re-applies migrations; run `db:seed-dev` again afterwards.
 
 ## Scripts
 
@@ -35,7 +37,7 @@ Local test accounts created during Phase 1 verification (local database only):
 | --- | --- |
 | `npm run lint` / `npm run typecheck` | ESLint / route-type generation + `tsc` |
 | `npm test` | Unit tests (`src/**/*.test.ts`) |
-| `npm run test:rls` | Tenant-isolation and role tests against the local database (the Phase 1 gate) |
+| `npm run test:rls` | Database tests: tenant isolation, roles, duplicate phone/plate rules (Phase 1 and 2 gates) |
 | `npm run db:types` | Regenerate `src/lib/supabase/database.types.ts` after a migration |
 | `npm run build` | Production build |
 
@@ -62,6 +64,22 @@ Notes:
   data per request, so there is no server cache that could leak one workshop's data into another's.
 - Timestamps are stored in UTC and shown in the workshop's time zone.
 - Every significant change is written to `activity_logs` (append-only; owners and advisors can read it).
+
+## Customers and vehicles (Phase 2)
+
+- Phone numbers are normalised in the database (`0300 1234567`, `+92 300 1234567` and `923001234567`
+  are the same number). A duplicate is flagged when the phone field loses focus, refused on save, and
+  refused again by a database trigger. A shared family number is allowed only with explicit
+  confirmation, which is logged.
+- Registration numbers are unique per workshop regardless of spacing or case. When a plate already
+  exists, staff can open it or transfer the vehicle to the new owner (history moves with it); only the
+  owner can register a true duplicate, with a recorded reason.
+- Mileage is an append-only history. A reading lower than the last one needs a note (e.g. odometer replaced).
+- Customers get per-workshop codes (C-0001…). Only the owner can archive or restore records; nothing is deleted.
+- Role → permission rules live in both `src/lib/auth/permissions.ts` and the `role_permissions` table, so
+  row-level security honours per-employee extra permissions. A test fails if the two drift apart.
+- Inventory managers and mechanics can't see customers yet; mechanics will see the customers and
+  vehicles of their assigned jobs in Phase 5.
 
 ## Phase 1 status
 

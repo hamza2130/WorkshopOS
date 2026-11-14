@@ -11,8 +11,8 @@ export type NavItem = {
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard", anyOf: [] },
   { href: "/jobs", label: "Job Cards", anyOf: ["jobs.manage", "jobs.view_assigned"], phase: 3 },
-  { href: "/customers", label: "Customers", anyOf: ["customers.manage"], phase: 2 },
-  { href: "/vehicles", label: "Vehicles", anyOf: ["vehicles.manage"], phase: 2 },
+  { href: "/customers", label: "Customers", anyOf: ["customers.manage"] },
+  { href: "/vehicles", label: "Vehicles", anyOf: ["vehicles.manage"] },
   { href: "/estimates", label: "Estimates", anyOf: ["estimates.manage"], phase: 4 },
   { href: "/inventory", label: "Inventory", anyOf: ["inventory.manage"], phase: 7 },
   { href: "/employees", label: "Employees", anyOf: ["staff.manage"] },

@@ -1,49 +1,9 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { config } from "dotenv";
-import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
+import { addMember, admin, anonClient, createWorkshop, run, userClient, type TestUser } from "./helpers";
 
-config({ path: [".env.local", ".env.test.local"], quiet: true });
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !anonKey || !serviceKey) {
-  throw new Error("Run `npm run db:env` with local Supabase running to create .env.local");
-}
-
-const PASSWORD = "Test-password-123!";
-const run = randomUUID().slice(0, 8);
-const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-
-function anonClient() {
-  return createClient(url!, anonKey!, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-async function userClient(label: string) {
-  const email = `${label}-${run}@example.test`;
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password: PASSWORD,
-    email_confirm: true,
-    user_metadata: { full_name: label },
-  });
-  if (error) throw error;
-  const client = anonClient();
-  const signIn = await client.auth.signInWithPassword({ email, password: PASSWORD });
-  if (signIn.error) throw signIn.error;
-  return { client, email, id: data.user.id };
-}
-
-async function createWorkshop(client: SupabaseClient, name: string) {
-  const { data, error } = await client.rpc("create_workshop", { p_name: name });
-  if (error) throw error;
-  return data as string;
-}
-
-let ownerA: Awaited<ReturnType<typeof userClient>>;
-let ownerB: Awaited<ReturnType<typeof userClient>>;
-let mechanicA: Awaited<ReturnType<typeof userClient>>;
+let ownerA: TestUser;
+let ownerB: TestUser;
+let mechanicA: TestUser;
 let wsA: string;
 let wsB: string;
 
@@ -55,15 +15,7 @@ beforeAll(async () => {
   ]);
   wsA = await createWorkshop(ownerA.client, `Alpha Motors ${run}`);
   wsB = await createWorkshop(ownerB.client, `Bravo Autos ${run}`);
-
-  const invite = await ownerA.client.rpc("create_invitation", {
-    ws: wsA,
-    p_email: mechanicA.email,
-    p_role: "mechanic",
-  });
-  if (invite.error) throw invite.error;
-  const accepted = await mechanicA.client.rpc("accept_invitation", { p_token: invite.data });
-  if (accepted.error) throw accepted.error;
+  await addMember(ownerA.client, wsA, mechanicA, "mechanic");
 });
 
 // Positive controls: the same operations the isolation tests expect to fail must
@@ -160,7 +112,7 @@ describe("tenant isolation between two workshops", () => {
       p_role: "advisor",
     });
     expect(invite.error).toBeNull();
-    const res = await ownerA.client.rpc("accept_invitation", { p_token: invite.data });
+    const res = await ownerA.client.rpc("accept_invitation", { p_token: invite.data! });
     expect(res.error).not.toBeNull();
     const members = await admin.from("workshop_members").select("id").eq("workshop_id", wsB).eq("user_id", ownerA.id);
     expect(members.data).toEqual([]);

@@ -1,4 +1,4 @@
-﻿
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -31,6 +31,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"customers": {
+                  Row: {
+                    "address": string | null,"archived_at": string | null,"code": string,"created_at": string,"created_by": string | null,"email": string | null,"id": string,"name": string,"notes": string | null,"phone": string,"phone_normalized": string | null,"shared_phone_confirmed": boolean,"updated_at": string,"whatsapp": string | null,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address"?: string | null,"archived_at"?: string | null,"code"?: string,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"name": string,"notes"?: string | null,"phone": string,"phone_normalized"?: never,"shared_phone_confirmed"?: boolean,"updated_at"?: string,"whatsapp"?: string | null,"workshop_id": string
+                  }
+                  Update: {
+                    "address"?: string | null,"archived_at"?: string | null,"code"?: string,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"name"?: string,"notes"?: string | null,"phone"?: string,"phone_normalized"?: never,"shared_phone_confirmed"?: boolean,"updated_at"?: string,"whatsapp"?: string | null,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "customers_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "customers_workshop_id_fkey"
+      columns: ["workshop_id"]
+isOneToOne: false
+      referencedRelation: "workshops"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "created_at": string,"email": string,"full_name": string,"id": string,"phone": string | null,"updated_at": string
@@ -44,6 +70,98 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"role_permissions": {
+                  Row: {
+                    "permission": string,"role": Database["public"]['Enums']["workshop_role"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "permission": string,"role": Database["public"]['Enums']["workshop_role"]
+                  }
+                  Update: {
+                    "permission"?: string,"role"?: Database["public"]['Enums']["workshop_role"]
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"vehicle_mileage_readings": {
+                  Row: {
+                    "id": string,"note": string | null,"reading": number,"recorded_at": string,"recorded_by": string | null,"source": string,"vehicle_id": string,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"note"?: string | null,"reading": number,"recorded_at"?: string,"recorded_by"?: string | null,"source"?: string,"vehicle_id": string,"workshop_id": string
+                  }
+                  Update: {
+                    "id"?: string,"note"?: string | null,"reading"?: number,"recorded_at"?: string,"recorded_by"?: string | null,"source"?: string,"vehicle_id"?: string,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "vehicle_mileage_readings_recorded_by_fkey"
+      columns: ["recorded_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "vehicle_mileage_readings_workshop_id_vehicle_id_fkey"
+      columns: ["workshop_id","vehicle_id"]
+isOneToOne: false
+      referencedRelation: "vehicles"
+      referencedColumns: ["workshop_id","id"]
+    }
+                  ]
+                },"vehicles": {
+                  Row: {
+                    "archived_at": string | null,"colour": string | null,"created_at": string,"created_by": string | null,"customer_id": string,"duplicate_registration_reason": string | null,"engine_cc": number | null,"engine_number": string | null,"fuel_type": Database["public"]['Enums']["fuel_type"] | null,"id": string,"make": string,"model": string,"notes": string | null,"registration_normalized": string | null,"registration_number": string,"transmission": Database["public"]['Enums']["transmission_type"] | null,"updated_at": string,"variant": string | null,"vin": string | null,"workshop_id": string,"year": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"colour"?: string | null,"created_at"?: string,"created_by"?: string | null,"customer_id": string,"duplicate_registration_reason"?: string | null,"engine_cc"?: number | null,"engine_number"?: string | null,"fuel_type"?: Database["public"]['Enums']["fuel_type"] | null,"id"?: string,"make": string,"model": string,"notes"?: string | null,"registration_normalized"?: never,"registration_number": string,"transmission"?: Database["public"]['Enums']["transmission_type"] | null,"updated_at"?: string,"variant"?: string | null,"vin"?: string | null,"workshop_id": string,"year"?: number | null
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"colour"?: string | null,"created_at"?: string,"created_by"?: string | null,"customer_id"?: string,"duplicate_registration_reason"?: string | null,"engine_cc"?: number | null,"engine_number"?: string | null,"fuel_type"?: Database["public"]['Enums']["fuel_type"] | null,"id"?: string,"make"?: string,"model"?: string,"notes"?: string | null,"registration_normalized"?: never,"registration_number"?: string,"transmission"?: Database["public"]['Enums']["transmission_type"] | null,"updated_at"?: string,"variant"?: string | null,"vin"?: string | null,"workshop_id"?: string,"year"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "vehicles_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "vehicles_workshop_id_customer_id_fkey"
+      columns: ["workshop_id","customer_id"]
+isOneToOne: false
+      referencedRelation: "customers"
+      referencedColumns: ["workshop_id","id"]
+    },{
+      foreignKeyName: "vehicles_workshop_id_fkey"
+      columns: ["workshop_id"]
+isOneToOne: false
+      referencedRelation: "workshops"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"workshop_counters": {
+                  Row: {
+                    "kind": string,"last_value": number,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "kind": string,"last_value"?: number,"workshop_id": string
+                  }
+                  Update: {
+                    "kind"?: string,"last_value"?: number,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workshop_counters_workshop_id_fkey"
+      columns: ["workshop_id"]
+isOneToOne: false
+      referencedRelation: "workshops"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"workshop_invitations": {
                   Row: {
@@ -137,6 +255,12 @@ isOneToOne: false
               "email": string,"role": Database["public"]['Enums']["workshop_role"],"status": string,"workshop_name": string
             }[]
                            },
+"has_any_workshop_permission":
+{ Args: { "perms": (string)[],"ws": string }; Returns: boolean
+                           },
+"has_workshop_permission":
+{ Args: { "perm": string,"ws": string }; Returns: boolean
+                           },
 "has_workshop_role":
 { Args: { "roles": (Database["public"]['Enums']["workshop_role"])[],"ws": string }; Returns: boolean
                            },
@@ -146,12 +270,31 @@ isOneToOne: false
 "log_activity":
 { Args: { "p_action": string,"p_entity_id": string,"p_entity_type": string,"p_metadata"?: Json,"ws": string }; Returns: undefined
                            },
+"next_workshop_number":
+{ Args: { "p_kind": string,"ws": string }; Returns: number
+                           },
+"normalize_phone":
+{ Args: { "p": string }; Returns: string
+                           },
+"normalize_registration":
+{ Args: { "p": string }; Returns: string
+                           },
+"search_customers":
+{ Args: { "include_archived"?: boolean,"p_limit"?: number,"p_offset"?: number,"q"?: string,"ws": string }; Returns: {
+              "archived_at": string,"code": string,"created_at": string,"email": string,"id": string,"name": string,"phone": string,"total_count": number,"vehicle_count": number,"whatsapp": string
+            }[]
+                           },
+"search_vehicles":
+{ Args: { "include_archived"?: boolean,"p_limit"?: number,"p_offset"?: number,"q"?: string,"ws": string }; Returns: {
+              "archived_at": string,"colour": string,"created_at": string,"current_mileage": number,"customer_id": string,"customer_name": string,"customer_phone": string,"id": string,"make": string,"model": string,"registration_number": string,"total_count": number,"variant": string,"year": number
+            }[]
+                           },
 "shares_workshop_with":
 { Args: { "other": string }; Returns: boolean
                            }
           }
           Enums: {
-            "workshop_role": "owner"|"advisor"|"mechanic"|"inventory_manager"|"cashier"
+            "fuel_type": "petrol"|"diesel"|"cng"|"lpg"|"hybrid"|"electric"|"other","transmission_type": "manual"|"automatic"|"other","workshop_role": "owner"|"advisor"|"mechanic"|"inventory_manager"|"cashier"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -267,7 +410,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "workshop_role": ["owner", "advisor", "mechanic", "inventory_manager", "cashier"]
+            "fuel_type": ["petrol", "diesel", "cng", "lpg", "hybrid", "electric", "other"],"transmission_type": ["manual", "automatic", "other"],"workshop_role": ["owner", "advisor", "mechanic", "inventory_manager", "cashier"]
           }
         }
 } as const

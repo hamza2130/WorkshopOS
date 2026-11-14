@@ -47,6 +47,31 @@ export default async function DashboardPage() {
         description={`${ctx.workshop.workshopName} · ${teamSize} active team member${teamSize === 1 ? "" : "s"}`}
       />
 
+      {ctx.permissions.has("customers.manage") || ctx.permissions.has("vehicles.manage") ? (
+        <div className="mb-6 flex flex-wrap gap-3">
+          {ctx.permissions.has("customers.manage") ? (
+            <>
+              <Link href="/customers/new" className={buttonClass("primary")}>
+                New customer
+              </Link>
+              <Link href="/customers" className={buttonClass("secondary")}>
+                Find customer
+              </Link>
+            </>
+          ) : null}
+          {ctx.permissions.has("vehicles.manage") ? (
+            <>
+              <Link href="/vehicles/new" className={buttonClass("secondary")}>
+                Add vehicle
+              </Link>
+              <Link href="/vehicles" className={buttonClass("secondary")}>
+                Find vehicle
+              </Link>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
       {isOwner ? (
         <Card className="p-6">
           <h2 className="text-base font-semibold text-slate-900">Get your workshop ready</h2>
