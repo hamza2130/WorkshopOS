@@ -117,7 +117,7 @@ export async function saveVehicle(_: VehicleState | undefined, formData: FormDat
 
   revalidatePath("/vehicles");
   revalidatePath("/customers", "layout");
-  redirect(`/vehicles/${id}`);
+  redirect(formData.get("then") === "checkin" ? `/jobs/new?vehicleId=${id}` : `/vehicles/${id}`);
 }
 
 export async function transferVehicle(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
@@ -137,7 +137,7 @@ export async function transferVehicle(_: ActionState | undefined, formData: Form
 
   revalidatePath("/vehicles");
   revalidatePath("/customers", "layout");
-  redirect(`/vehicles/${vehicleId}`);
+  redirect(formData.get("then") === "checkin" ? `/jobs/new?vehicleId=${vehicleId}` : `/vehicles/${vehicleId}`);
 }
 
 export async function addMileageReading(_: ActionState | undefined, formData: FormData): Promise<ActionState> {

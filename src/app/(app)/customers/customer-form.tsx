@@ -15,7 +15,15 @@ export type CustomerFormValues = {
   notes?: string;
 };
 
-export function CustomerForm({ customerId, defaults = {} }: { customerId?: string; defaults?: CustomerFormValues }) {
+export function CustomerForm({
+  customerId,
+  defaults = {},
+  then,
+}: {
+  customerId?: string;
+  defaults?: CustomerFormValues;
+  then?: "checkin";
+}) {
   const [state, action] = useActionState(saveCustomer, undefined);
   const [blurMatches, setBlurMatches] = useState<DuplicateCustomer[]>([]);
   const [checking, startCheck] = useTransition();
@@ -30,12 +38,19 @@ export function CustomerForm({ customerId, defaults = {} }: { customerId?: strin
     <form action={action} className="space-y-4" noValidate>
       <FormMessage state={state} />
       {customerId ? <input type="hidden" name="customerId" value={customerId} /> : null}
+      {then ? <input type="hidden" name="then" value={then} /> : null}
 
       <Field label="Name" htmlFor="name" error={err("name")}>
         <Input id="name" name="name" required autoComplete="off" defaultValue={v.name} aria-invalid={Boolean(err("name"))} />
       </Field>
 
-      <Field label="Phone" htmlFor="phone" hint="Any format: 0300 1234567 or +92 300 1234567" error={err("phone")}>
+      {/* The checking message replaces the hint (same line) so the layout doesn't shift under a click. */}
+      <Field
+        label="Phone"
+        htmlFor="phone"
+        hint={checking ? "Checking for existing customers…" : "Any format: 0300 1234567 or +92 300 1234567"}
+        error={err("phone")}
+      >
         <Input
           id="phone"
           name="phone"
@@ -53,7 +68,6 @@ export function CustomerForm({ customerId, defaults = {} }: { customerId?: strin
           }}
         />
       </Field>
-      {checking ? <p className="-mt-2 text-xs text-slate-500">Checking for existing customers…</p> : null}
 
       {matches.length ? (
         <div id="phone-matches" role="alert" className="space-y-3 rounded-md bg-amber-50 p-4 ring-1 ring-amber-200">
@@ -116,6 +130,8 @@ export function CustomerForm({ customerId, defaults = {} }: { customerId?: strin
       <div className="flex flex-wrap justify-end gap-3 pt-2">
         {customerId ? (
           <SubmitButton>Save changes</SubmitButton>
+        ) : then === "checkin" ? (
+          <SubmitButton pendingText="Saving…">Save and add vehicle</SubmitButton>
         ) : (
           <>
             <SubmitButton variant="secondary">Save customer</SubmitButton>

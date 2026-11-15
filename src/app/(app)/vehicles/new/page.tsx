@@ -50,11 +50,19 @@ export default async function NewVehiclePage({ searchParams }: PageProps<"/vehic
     .maybeSingle();
   if (!customer) notFound();
 
+  const checkin = str(sp, "then") === "checkin";
   return (
     <>
-      <PageHeader title="Add vehicle" description={`Owner: ${customer.name} (${customer.code})`} />
+      <PageHeader
+        title="Add vehicle"
+        description={`${checkin ? "Check-in step 2 of 3 · " : ""}Owner: ${customer.name} (${customer.code})`}
+      />
       <Card className="max-w-3xl p-6">
-        <VehicleForm customer={{ id: customer.id, name: customer.name }} isOwner={ctx.workshop.role === "owner"} />
+        <VehicleForm
+          customer={{ id: customer.id, name: customer.name }}
+          isOwner={ctx.workshop.role === "owner"}
+          then={checkin ? "checkin" : undefined}
+        />
       </Card>
       <p className="mt-4 text-sm">
         <Link href={`/customers/${customer.id}`} className="text-brand-700 hover:underline">

@@ -1,0 +1,144 @@
+---
+title: WorkshopOS data model (Phases 1–3) — every row belongs to one workshop
+---
+erDiagram
+  workshops ||--o{ workshop_members : "has staff"
+  profiles ||--o{ workshop_members : "is member"
+  workshops ||--o{ workshop_invitations : "invites"
+  workshops ||--o{ activity_logs : "records"
+  workshops ||--o{ workshop_counters : "numbers"
+  role_permissions }o--|| workshop_members : "role grants"
+  workshops ||--o{ customers : "serves"
+  customers ||--o{ vehicles : "owns"
+  vehicles ||--o{ vehicle_mileage_readings : "odometer history"
+  customers ||--o{ job_cards : "brings"
+  vehicles ||--o{ job_cards : "is serviced in"
+  job_cards ||--o{ job_status_history : "status timeline"
+  job_status_actions ||--o{ job_status_history : "action taken"
+  job_cards ||--o{ job_notes : "notes"
+  job_cards ||--o{ job_attachments : "photos and documents"
+  job_cards |o--o{ vehicle_mileage_readings : "check-in reading"
+  profiles ||--|| auth_users : "1:1"
+
+  workshops {
+    uuid id PK
+    text name
+    char currency "PKR"
+    text timezone "Asia/Karachi"
+    numeric tax_rate
+    text invoice_prefix "INV"
+    text job_card_prefix "JC"
+  }
+  profiles {
+    uuid id PK "= auth user id"
+    text email
+    text full_name
+    text phone
+  }
+  workshop_members {
+    uuid workshop_id FK
+    uuid user_id FK
+    enum role "owner advisor mechanic inventory_manager cashier"
+    text_array extra_permissions
+    bool is_active
+  }
+  workshop_invitations {
+    uuid workshop_id FK
+    text email
+    enum role
+    text token_hash "SHA-256 only"
+    timestamptz expires_at "7 days"
+  }
+  activity_logs {
+    uuid workshop_id FK
+    uuid actor_id FK
+    text entity_type
+    uuid entity_id
+    text action
+    jsonb metadata
+  }
+  workshop_counters {
+    uuid workshop_id PK
+    text kind PK "customer job_card"
+    bigint last_value
+  }
+  role_permissions {
+    enum role PK
+    text permission PK
+  }
+  customers {
+    uuid id PK
+    uuid workshop_id FK
+    text code "C-0001"
+    text name
+    text phone
+    text phone_normalized "generated"
+    bool shared_phone_confirmed
+    timestamptz archived_at
+  }
+  vehicles {
+    uuid id PK
+    uuid workshop_id FK
+    uuid customer_id FK "same workshop"
+    text registration_number
+    text registration_normalized "generated"
+    text make_model_variant
+    smallint year
+    text duplicate_registration_reason
+    timestamptz archived_at
+  }
+  vehicle_mileage_readings {
+    uuid vehicle_id FK
+    int reading
+    text source "registration manual job"
+    text note "required if lower"
+    uuid job_card_id FK
+  }
+  job_cards {
+    uuid id PK
+    uuid workshop_id FK
+    text job_number "JC-0001"
+    uuid customer_id FK
+    uuid vehicle_id FK
+    enum status "12 statuses"
+    enum on_hold_from
+    int check_in_mileage
+    enum fuel_level
+    text complaint
+    uuid service_advisor_id FK
+    timestamptz expected_delivery_at
+  }
+  job_status_history {
+    bigint id PK "ordered"
+    uuid job_card_id FK
+    enum from_status
+    enum to_status
+    text action
+    text reason
+    uuid changed_by FK
+    timestamptz changed_at
+  }
+  job_status_actions {
+    text code PK
+    enum from_status PK
+    enum to_status "null = resume"
+    bool requires_reason
+    text permission
+  }
+  job_notes {
+    uuid job_card_id FK
+    text body
+    text visibility "internal customer"
+  }
+  job_attachments {
+    uuid job_card_id FK
+    text storage_path "workshop/job/file"
+    text content_type
+    int size_bytes "max 10 MB"
+    text category
+    timestamptz removed_at
+  }
+  auth_users {
+    uuid id PK
+    text email
+  }

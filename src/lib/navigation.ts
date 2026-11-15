@@ -10,7 +10,7 @@ export type NavItem = {
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard", anyOf: [] },
-  { href: "/jobs", label: "Job Cards", anyOf: ["jobs.manage", "jobs.view_assigned"], phase: 3 },
+  { href: "/jobs", label: "Job Cards", anyOf: ["jobs.manage", "jobs.view_assigned"] },
   { href: "/customers", label: "Customers", anyOf: ["customers.manage"] },
   { href: "/vehicles", label: "Vehicles", anyOf: ["vehicles.manage"] },
   { href: "/estimates", label: "Estimates", anyOf: ["estimates.manage"], phase: 4 },

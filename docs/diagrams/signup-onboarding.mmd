@@ -1,0 +1,27 @@
+---
+title: Owner sign-up, email confirmation and workshop onboarding
+---
+sequenceDiagram
+  autonumber
+  actor Owner
+  participant App as Next.js app
+  participant Auth as Supabase Auth
+  participant Mail as Email inbox
+  participant DB as Postgres
+
+  Owner->>App: Register (name, phone, email, password)
+  App->>App: Validate with Zod (8+ chars, letters and numbers)
+  App->>Auth: signUp() with emailRedirectTo /auth/callback?next=/onboarding
+  Auth->>DB: Insert auth user
+  DB->>DB: Trigger creates profiles row (name, phone, email)
+  Auth->>Mail: Confirmation link
+  App-->>Owner: "We sent a confirmation link"
+  Owner->>Auth: Opens the link (same device)
+  Auth-->>Owner: Redirect to /auth/callback?code=…
+  Owner->>App: GET /auth/callback
+  App->>Auth: exchangeCodeForSession(code) using the PKCE cookie
+  App-->>Owner: Session cookie set, redirect to /onboarding
+  Owner->>App: Workshop details (Pakistan defaults: PKR, Asia/Karachi)
+  App->>DB: rpc create_workshop()
+  Note over DB: One transaction: workshop + owner membership + activity log entry
+  App-->>Owner: active_workshop cookie, redirect to /dashboard

@@ -1,0 +1,51 @@
+---
+title: Job card status workflow — every move is recorded with time, person and reason
+---
+stateDiagram-v2
+  state "Draft" as draft
+  state "Awaiting inspection" as awaiting_inspection
+  state "Awaiting estimate" as awaiting_estimate
+  state "Awaiting customer approval" as awaiting_approval
+  state "Approved" as approved
+  state "Awaiting assignment" as awaiting_assignment
+  state "In progress" as in_progress
+  state "Quality check" as quality_check
+  state "Ready for delivery" as ready_for_delivery
+  state "Delivered" as delivered
+  state "On hold" as on_hold
+  state "Cancelled" as cancelled
+
+  [*] --> draft: Save as draft
+  [*] --> awaiting_inspection: Check in
+  draft --> awaiting_inspection: Check in vehicle
+  awaiting_inspection --> awaiting_estimate: Inspection complete
+  awaiting_inspection --> awaiting_estimate: Skip inspection *
+  awaiting_estimate --> awaiting_approval: Estimate sent
+  awaiting_approval --> approved: Customer approved
+  awaiting_approval --> awaiting_estimate: Customer wants changes *
+  approved --> awaiting_assignment: Ready to assign
+  awaiting_assignment --> in_progress: Start work
+  in_progress --> awaiting_estimate: Additional work found *
+  in_progress --> quality_check: Work complete
+  quality_check --> ready_for_delivery: Quality check passed
+  quality_check --> in_progress: Send back for rework *
+  ready_for_delivery --> delivered: Deliver to customer
+  delivered --> [*]
+
+  in_progress --> on_hold: Put on hold * (from any active status)
+  on_hold --> in_progress: Resume (returns to the status it was in)
+  awaiting_estimate --> cancelled: Cancel * (from any status before delivery)
+  cancelled --> [*]
+
+  note right of on_hold
+    Put on hold * from any active status
+    (inspection through ready for delivery).
+    Resume returns to where it was.
+  end note
+  note right of cancelled
+    Cancel * from any status before delivery.
+    Delivered and cancelled jobs are locked.
+  end note
+  note left of awaiting_inspection
+    * = a reason is required
+  end note
