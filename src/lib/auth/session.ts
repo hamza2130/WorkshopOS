@@ -11,6 +11,7 @@ export type Membership = {
   workshopId: string;
   workshopName: string;
   timezone: string;
+  currency: string;
   role: Role;
   extraPermissions: string[];
 };
@@ -43,7 +44,7 @@ export const getMemberships = cache(async (): Promise<Membership[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("workshop_members")
-    .select("workshop_id, role, extra_permissions, workshops(name, timezone)")
+    .select("workshop_id, role, extra_permissions, workshops(name, timezone, currency)")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .order("created_at");
@@ -52,6 +53,7 @@ export const getMemberships = cache(async (): Promise<Membership[]> => {
     workshopId: m.workshop_id,
     workshopName: m.workshops?.name ?? "Workshop",
     timezone: m.workshops?.timezone ?? "Asia/Karachi",
+    currency: m.workshops?.currency ?? "PKR",
     role: m.role,
     extraPermissions: m.extra_permissions,
   }));

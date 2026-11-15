@@ -52,10 +52,11 @@ export const noteSchema = z.object({
 });
 
 export const ATTACHMENT_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"] as const;
-export const ATTACHMENT_CATEGORIES = ["vehicle_photo", "damage_photo", "document"] as const;
+export const ATTACHMENT_CATEGORIES = ["vehicle_photo", "damage_photo", "inspection_photo", "document"] as const;
 export const ATTACHMENT_CATEGORY_LABELS: Record<(typeof ATTACHMENT_CATEGORIES)[number], string> = {
   vehicle_photo: "Vehicle photo",
   damage_photo: "Existing damage",
+  inspection_photo: "Inspection finding",
   document: "Document",
 };
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;

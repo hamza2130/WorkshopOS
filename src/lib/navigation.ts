@@ -13,7 +13,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/jobs", label: "Job Cards", anyOf: ["jobs.manage", "jobs.view_assigned"] },
   { href: "/customers", label: "Customers", anyOf: ["customers.manage"] },
   { href: "/vehicles", label: "Vehicles", anyOf: ["vehicles.manage"] },
-  { href: "/estimates", label: "Estimates", anyOf: ["estimates.manage"], phase: 4 },
+  { href: "/estimates", label: "Estimates", anyOf: ["estimates.manage"] },
   { href: "/inventory", label: "Inventory", anyOf: ["inventory.manage"], phase: 7 },
   { href: "/employees", label: "Employees", anyOf: ["staff.manage"] },
   { href: "/invoices", label: "Invoices", anyOf: ["invoices.manage", "payments.record"], phase: 6 },

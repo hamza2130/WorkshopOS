@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { Alert, Badge, buttonClass, Card, PageHeader } from "@/components/ui";
+import { isPermission } from "@/lib/auth/permissions";
 import { requirePageAccess } from "@/lib/auth/session";
+import { ESTIMATE_STATUS_LABELS } from "@/lib/estimates";
+import { formatMoney } from "@/lib/money";
 import { formatDateTime } from "@/lib/format";
 import { ATTACHMENT_CATEGORY_LABELS } from "@/lib/job-schema";
 import { CLOSED, FUEL_LEVEL_LABELS, JOB_STATUS_LABELS, SYSTEM_ACTION_LABELS, type JobStatus } from "@/lib/job-status";
@@ -46,7 +49,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     .maybeSingle();
   if (!job || !job.customers || !job.vehicles) notFound();
 
-  const [history, notes, files, actions] = await Promise.all([
+  const [history, notes, files, actions, inspection, estimates] = await Promise.all([
     supabase
       .from("job_status_history")
       .select("id, from_status, to_status, action, reason, changed_at, profiles(full_name, email)")
@@ -62,7 +65,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
       .select("id, storage_path, file_name, content_type, category, caption, uploaded_at, removed_at, uploader:profiles!job_attachments_uploaded_by_fkey(full_name, email), remover:profiles!job_attachments_removed_by_fkey(full_name, email)")
       .eq("job_card_id", id)
       .order("uploaded_at"),
-    supabase.from("job_status_actions").select("code, label, from_status, requires_reason, tone, sort_order").order("sort_order"),
+    supabase.from("job_status_actions").select("code, label, from_status, requires_reason, tone, sort_order, permission").order("sort_order"),
+    supabase.from("job_inspections").select("completed_at, job_inspection_items(outcome)").eq("job_card_id", id).maybeSingle(),
+    supabase.from("estimates").select("version, status, total").eq("job_card_id", id).order("version", { ascending: false }).limit(1),
   ]);
 
   const active = (files.data ?? []).filter((f) => !f.removed_at);
@@ -80,15 +85,20 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   }));
 
   const actionLabel = new Map((actions.data ?? []).map((a) => [a.code, a.label]));
+  // Inspection, estimate and approval moves happen through their own screens ("system").
   const available = (actions.data ?? [])
-    .filter((a) => a.from_status === job.status)
+    .filter((a) => a.from_status === job.status && isPermission(a.permission) && ctx.permissions.has(a.permission))
     .map((a) => ({ code: a.code, label: a.label, requiresReason: a.requires_reason, tone: a.tone }));
+  const insp = inspection.data;
+  const findingsCount = (insp?.job_inspection_items ?? []).filter((i) => i.outcome === "needs_attention" || i.outcome === "requires_repair").length;
+  const latestEstimate = estimates.data?.[0];
 
   const events: TimelineEvent[] = [
     ...(history.data ?? []).map((h) => ({
       key: `h${h.id}`,
       at: h.changed_at,
-      who: name(h.profiles),
+      // No staff member means the customer did it, through their approval link.
+      who: h.profiles ? name(h.profiles) : "Customer (approval link)",
       title: SYSTEM_ACTION_LABELS[h.action] ?? actionLabel.get(h.action) ?? h.action,
       detail: h.reason,
       badge: h.from_status
@@ -155,7 +165,51 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         <div className="space-y-6 lg:col-span-2">
           <Card className="p-6">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Next step</h2>
+            {job.status === "awaiting_inspection" ? (
+              <Link href={`/jobs/${job.id}/inspection`} className={buttonClass("primary", "mb-3")}>
+                {insp ? "Continue inspection" : "Start inspection"}
+              </Link>
+            ) : job.status === "awaiting_estimate" && ctx.permissions.has("estimates.manage") ? (
+              <Link href={`/jobs/${job.id}/estimate`} className={buttonClass("primary", "mb-3")}>
+                {latestEstimate?.status === "draft" ? "Continue estimate" : "Prepare estimate"}
+              </Link>
+            ) : job.status === "awaiting_approval" && ctx.permissions.has("estimates.manage") ? (
+              <Link href={`/jobs/${job.id}/estimate`} className={buttonClass("primary", "mb-3")}>
+                Waiting for the customer — view estimate
+              </Link>
+            ) : null}
             <StatusActions key={job.status} jobId={job.id} status={job.status} actions={available} />
+          </Card>
+
+          <Card className="grid gap-4 p-6 sm:grid-cols-2">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Inspection</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {!insp
+                  ? "Not started."
+                  : insp.completed_at
+                    ? `Completed · ${findingsCount} finding${findingsCount === 1 ? "" : "s"} to address`
+                    : "In progress"}
+              </p>
+              {insp || !closed ? (
+                <Link href={`/jobs/${job.id}/inspection`} className="mt-2 inline-block text-sm text-brand-700 hover:underline">
+                  {insp ? "Open inspection" : "Start inspection"}
+                </Link>
+              ) : null}
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Estimate</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {latestEstimate
+                  ? `Version ${latestEstimate.version} · ${ESTIMATE_STATUS_LABELS[latestEstimate.status]} · ${formatMoney(latestEstimate.total, ctx.workshop.currency)}`
+                  : "None yet."}
+              </p>
+              {latestEstimate && ctx.permissions.has("estimates.manage") ? (
+                <Link href={`/jobs/${job.id}/estimate`} className="mt-2 inline-block text-sm text-brand-700 hover:underline">
+                  Open estimate
+                </Link>
+              ) : null}
+            </div>
           </Card>
 
           <Card className="p-6">

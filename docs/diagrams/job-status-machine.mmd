@@ -18,12 +18,14 @@ stateDiagram-v2
   [*] --> draft: Save as draft
   [*] --> awaiting_inspection: Check in
   draft --> awaiting_inspection: Check in vehicle
-  awaiting_inspection --> awaiting_estimate: Inspection complete
+  awaiting_inspection --> awaiting_estimate: ⚙ Inspection completed
   awaiting_inspection --> awaiting_estimate: Skip inspection *
-  awaiting_estimate --> awaiting_approval: Estimate sent
-  awaiting_approval --> approved: Customer approved
-  awaiting_approval --> awaiting_estimate: Customer wants changes *
+  awaiting_estimate --> awaiting_approval: ⚙ Estimate sent
+  awaiting_approval --> approved: ⚙ Customer approved (all or some)
+  awaiting_approval --> awaiting_estimate: ⚙ Customer declined / ⚙ revision started *
+  approved --> awaiting_estimate: ⚙ Revision started *
   approved --> awaiting_assignment: Ready to assign
+  awaiting_assignment --> awaiting_estimate: ⚙ Revision started *
   awaiting_assignment --> in_progress: Start work
   in_progress --> awaiting_estimate: Additional work found *
   in_progress --> quality_check: Work complete
@@ -37,15 +39,12 @@ stateDiagram-v2
   awaiting_estimate --> cancelled: Cancel * (from any status before delivery)
   cancelled --> [*]
 
-  note right of on_hold
-    Put on hold * from any active status
-    (inspection through ready for delivery).
-    Resume returns to where it was.
-  end note
-  note right of cancelled
-    Cancel * from any status before delivery.
-    Delivered and cancelled jobs are locked.
-  end note
   note left of awaiting_inspection
     * = a reason is required
+    ⚙ = moved by the system when the inspection
+    is completed, an estimate is sent or revised,
+    or the customer decides — not a button
+  end note
+  note right of cancelled
+    Delivered and cancelled jobs are locked.
   end note

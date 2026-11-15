@@ -6,11 +6,18 @@ import { signOut } from "@/app/(auth)/actions";
 import { ROLE_LABELS } from "@/lib/auth/permissions";
 import { getWorkshopContext } from "@/lib/auth/session";
 import { visibleNav } from "@/lib/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { MobileNav, NavLinks, type NavLink } from "./nav-links";
 import { WorkshopSwitcher } from "./workshop-switcher";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const ctx = await getWorkshopContext();
+  const supabase = await createClient();
+  const { count: unread } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("workshop_id", ctx.workshop.workshopId)
+    .is("read_at", null);
   const items: NavLink[] = visibleNav(ctx.permissions).map((i) => ({
     href: i.href,
     label: i.label,
@@ -41,6 +48,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/notifications"
+              aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+              className="relative rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {unread ? (
+                <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              ) : null}
+            </Link>
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium leading-tight text-slate-900">{ctx.fullName || ctx.email}</p>
               <Badge tone="muted">{ROLE_LABELS[ctx.workshop.role]}</Badge>

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Database } from "@/lib/supabase/database.types";
 import { addMember, admin, createWorkshop, run, userClient, type Client, type TestUser } from "./helpers";
+import { approveThroughEstimate } from "./workflow";
 
 type JobStatus = Database["public"]["Enums"]["job_status"];
 
@@ -88,27 +89,41 @@ describe("every status change is timestamped (Phase 3 gate)", () => {
 
   it("writes exactly one ordered history row for every move from check-in to delivery", async () => {
     const job = await mustOpenJob(advisorA.client, wsA, vehicleA, { p_as_draft: true });
-    const path: [string, JobStatus][] = [
-      ["check_in", "draft"],
-      ["complete_inspection", "awaiting_inspection"],
-      ["send_estimate", "awaiting_estimate"],
-      ["record_approval", "awaiting_approval"],
+    expect((await move(advisorA.client, job, "check_in", "draft")).error).toBeNull();
+    // Inspection, sending the estimate and the customer's approval move the job themselves.
+    await approveThroughEstimate(advisorA.client, wsA, job);
+    const manual: [string, JobStatus][] = [
       ["request_assignment", "approved"],
       ["start_work", "awaiting_assignment"],
       ["finish_work", "in_progress"],
       ["pass_quality_check", "quality_check"],
       ["deliver", "ready_for_delivery"],
     ];
-    for (const [action, from] of path) {
+    for (const [action, from] of manual) {
       const res = await move(advisorA.client, job, action, from);
       expect(res.error, action).toBeNull();
     }
 
     const h = await history(job);
-    expect(h.map((r) => r.action)).toEqual(["created_as_draft", ...path.map(([a]) => a)]);
-    expect(h.slice(1).map((r) => r.from_status)).toEqual(path.map(([, from]) => from));
+    expect(h.map((r) => r.action)).toEqual([
+      "created_as_draft",
+      "check_in",
+      "complete_inspection",
+      "send_estimate",
+      "record_approval",
+      ...manual.map(([a]) => a),
+    ]);
+    expect(h.map((r) => r.from_status)).toEqual([
+      null,
+      "draft",
+      "awaiting_inspection",
+      "awaiting_estimate",
+      "awaiting_approval",
+      ...manual.map(([, from]) => from),
+    ]);
     expect(h.at(-1)?.to_status).toBe("delivered");
-    for (const r of h) expect(r.changed_by).toBe(advisorA.id);
+    // Staff moves are attributed to the advisor; the approval came from the customer's link.
+    for (const r of h) expect(r.changed_by).toBe(r.action === "record_approval" ? null : advisorA.id);
     const times = h.map((r) => new Date(r.changed_at).getTime());
     expect([...times].sort((a, b) => a - b)).toEqual(times);
 
@@ -156,17 +171,18 @@ describe("status rules", () => {
     expect(h.at(-1)).toMatchObject({ action: "skip_inspection", reason: "Oil change at fixed price" });
   });
 
+  it("doesn't let staff press system-driven moves by hand", async () => {
+    const job = await mustOpenJob(advisorA.client, wsA, vehicleA);
+    const res = await move(ownerA.client, job, "complete_inspection", "awaiting_inspection");
+    expect(res.error).not.toBeNull();
+    expect(await history(job)).toHaveLength(1);
+  });
+
   it("resumes a held job to the status it was in", async () => {
     const job = await mustOpenJob(advisorA.client, wsA, vehicleA);
-    for (const [a, s] of [
-      ["complete_inspection", "awaiting_inspection"],
-      ["send_estimate", "awaiting_estimate"],
-      ["record_approval", "awaiting_approval"],
-      ["request_assignment", "approved"],
-      ["start_work", "awaiting_assignment"],
-    ] as [string, JobStatus][]) {
-      await move(advisorA.client, job, a, s);
-    }
+    await approveThroughEstimate(advisorA.client, wsA, job);
+    await move(advisorA.client, job, "request_assignment", "approved");
+    await move(advisorA.client, job, "start_work", "awaiting_assignment");
     expect((await move(advisorA.client, job, "put_on_hold", "in_progress", "Waiting for parts")).data).toBe("on_hold");
     expect((await move(advisorA.client, job, "resume", "on_hold")).data).toBe("in_progress");
     const { data } = await advisorA.client.from("job_cards").select("on_hold_from").eq("id", job).single();
@@ -176,8 +192,8 @@ describe("status rules", () => {
   it("lets only one of two simultaneous clicks through", async () => {
     const job = await mustOpenJob(advisorA.client, wsA, vehicleA);
     const [a, b] = await Promise.all([
-      move(advisorA.client, job, "complete_inspection", "awaiting_inspection"),
-      move(ownerA.client, job, "complete_inspection", "awaiting_inspection"),
+      move(advisorA.client, job, "skip_inspection", "awaiting_inspection", "Quick job"),
+      move(ownerA.client, job, "skip_inspection", "awaiting_inspection", "Quick job"),
     ]);
     expect([a.error, b.error].filter((e) => e === null)).toHaveLength(1);
     expect([a.error?.message, b.error?.message]).toContain("status_changed");
@@ -229,7 +245,7 @@ describe("roles", () => {
     const job = await mustOpenJob(advisorA.client, wsA, vehicleA);
     const read = await cashierA.client.from("job_cards").select("id").eq("id", job);
     expect(read.data).toHaveLength(1);
-    const res = await move(cashierA.client, job, "complete_inspection", "awaiting_inspection");
+    const res = await move(cashierA.client, job, "skip_inspection", "awaiting_inspection", "Trying");
     expect(res.error).not.toBeNull();
   });
 });

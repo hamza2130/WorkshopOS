@@ -38,6 +38,10 @@ Owner-only permissions can never be granted as extras (enforced in code and by a
 | Customers | `customers.manage`, `invoices.manage`, `payments.record` | `customers.manage` |
 | Vehicles, mileage | `vehicles.manage`, `invoices.manage`, `payments.record` | `vehicles.manage` |
 | Job cards, history, notes, attachments | `jobs.manage`, `invoices.manage`, `payments.record` | `jobs.manage` |
+| Inspections | `jobs.manage`, `estimates.manage`, `invoices.manage`, `payments.record` | `jobs.manage` |
+| Estimates, lines, decisions | `estimates.manage`, `jobs.manage`, `invoices.manage`, `payments.record` | `estimates.manage` (decisions only via the customer link or "record decision") |
+| Labour and parts catalogue | `estimates.manage`, `workshop.settings`, `invoices.manage` (+ `inventory.manage` for parts) | `workshop.settings` (+ `inventory.manage` for parts) |
+| Notifications | the recipient only | written by the system only |
 | Activity log | Owner, advisor | written by the system only |
 
 Mechanics and inventory managers can't see customers yet. In Phase 5 mechanics will see the customer

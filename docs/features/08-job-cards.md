@@ -45,14 +45,19 @@ phases attach inspections, estimates, mechanic tasks, parts, invoices and paymen
 The job card shows only the actions allowed from its current status, defined as data in
 `job_status_actions`:
 
+⚙ = system-driven since Phase 4: the move happens when the inspection is completed, an estimate is
+sent or revised, or the customer decides. These have no button (`permission = 'system'`, which nobody
+holds), so they can't be faked.
+
 | Action | From | To | Reason |
 | --- | --- | --- | :-: |
 | Check in vehicle | Draft | Awaiting inspection | |
-| Inspection complete | Awaiting inspection | Awaiting estimate | |
+| ⚙ Inspection complete | Awaiting inspection | Awaiting estimate | |
 | Skip inspection | Awaiting inspection | Awaiting estimate | required |
-| Estimate sent to customer | Awaiting estimate | Awaiting approval | |
-| Customer approved | Awaiting approval | Approved | |
-| Customer wants changes | Awaiting approval | Awaiting estimate | required |
+| ⚙ Estimate sent to customer | Awaiting estimate | Awaiting approval | |
+| ⚙ Customer approved (all or some lines) | Awaiting approval | Approved | |
+| ⚙ Customer declined the estimate | Awaiting approval | Awaiting estimate | |
+| ⚙ Revise estimate | Awaiting approval, Approved, Awaiting assignment | Awaiting estimate | required |
 | Ready to assign | Approved | Awaiting assignment | |
 | Start work | Awaiting assignment | In progress | |
 | Additional work found | In progress | Awaiting estimate | required |
@@ -68,8 +73,11 @@ The job card shows only the actions allowed from its current status, defined as 
 reason is recorded so the timeline stays honest. It is a product decision made in Phase 3 and can be
 removed by deleting one row of `job_status_actions`.
 
-In Phases 4–6 some moves will be driven by the system instead of a button (e.g. *Customer approved* by
-the customer's approval link, *Start work* by mechanic assignment).
+The job card's **Next step** panel leads with the right screen for the stage: *Start / Continue
+inspection*, *Prepare / Continue estimate*, or *Waiting for the customer — view estimate*. See
+[inspections](10-inspections.md) and [estimates](12-estimates-and-customer-approval.md). Phase 5 will
+drive *Start work* from mechanic assignment in the same way. On the timeline, moves made through the
+customer's link show "Customer (approval link)".
 
 ## How the gate is enforced
 
@@ -151,7 +159,6 @@ upload, notes, hold and resume, dashboard counts and search were verified in the
 
 ## Not yet built
 
-- Inspection checklists (Phase 4) and estimates with customer approval links (Phase 4).
 - Mechanic tasks, assignment and the mechanic's mobile view (Phase 5).
 - Invoices and payments (Phase 6), parts used (Phase 7).
 - Printable job card / PDF.

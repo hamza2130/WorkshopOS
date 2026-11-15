@@ -3,6 +3,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { requirePageAccess } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./settings-form";
+import { SettingsTabs } from "./settings-tabs";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -15,6 +16,7 @@ export default async function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" description="Workshop profile, region, tax and document numbering." />
+      <SettingsTabs />
       <Card className="max-w-3xl p-6">
         <SettingsForm
           defaults={{
