@@ -26,9 +26,10 @@ stateDiagram-v2
   approved --> awaiting_estimate: ⚙ Revision started *
   approved --> awaiting_assignment: Ready to assign
   awaiting_assignment --> awaiting_estimate: ⚙ Revision started *
-  awaiting_assignment --> in_progress: Start work
+  approved --> in_progress: ⚙ First task started
+  awaiting_assignment --> in_progress: Start work / ⚙ first task started
   in_progress --> awaiting_estimate: Additional work found *
-  in_progress --> quality_check: Work complete
+  in_progress --> quality_check: Work complete (all tasks done or cancelled)
   quality_check --> ready_for_delivery: Quality check passed
   quality_check --> in_progress: Send back for rework *
   ready_for_delivery --> delivered: Deliver to customer
@@ -43,7 +44,8 @@ stateDiagram-v2
     * = a reason is required
     ⚙ = moved by the system when the inspection
     is completed, an estimate is sent or revised,
-    or the customer decides — not a button
+    the customer decides, or a mechanic starts the
+    first task — not a button
   end note
   note right of cancelled
     Delivered and cancelled jobs are locked.

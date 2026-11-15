@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Badge, buttonClass, Card, PageHeader } from "@/components/ui";
 import { getWorkshopContext } from "@/lib/auth/session";
 import { IN_WORKSHOP, JOB_STATUS_LABELS, type JobStatus } from "@/lib/job-status";
@@ -22,6 +23,8 @@ const BOARD: JobStatus[] = [
 
 export default async function DashboardPage() {
   const ctx = await getWorkshopContext();
+  // Mechanics start on their own job list.
+  if (!ctx.permissions.has("dashboard.view") && ctx.permissions.has("jobs.view_assigned")) redirect("/my-jobs");
   const supabase = await createClient();
   const isOwner = ctx.workshop.role === "owner";
   const canJobs = ctx.permissions.has("jobs.manage");

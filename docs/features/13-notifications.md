@@ -1,11 +1,11 @@
 # 13 · In-app notifications
 
-**Phase 4 · Built**
+**Phases 4–5 · Built**
 
 ## What it does
 
 Tells staff when something needs their attention without them watching the screen. For now: a
-customer's decision on an estimate. The bell in the header shows the unread count; the list is at
+customer's decision on an estimate, new work for a mechanic, a blocked task, and all tasks finished. The bell in the header shows the unread count; the list is at
 `/notifications`.
 
 ## Who gets what
@@ -13,11 +13,14 @@ customer's decision on an estimate. The bell in the header shows the unread coun
 | Event | Recipients |
 | --- | --- |
 | Customer decides on an estimate (link, or recorded by staff) | The job's service advisor and every active owner, except whoever made the change |
+| A task is assigned or reassigned to someone | That person (not when they assign it to themselves); opens their [My jobs](15-mechanic-my-jobs.md) view |
+| A task is blocked | The job's service advisor and every active owner, except whoever blocked it — with the reason |
+| The last open task is completed or cancelled | The job's service advisor and every active owner, except whoever made the change — "ready for quality check" |
 
 ## How it works
 
-`notify_job_staff()` is called inside the decision function, in the same transaction, so a decision
-can't happen without its notification. Opening a notification marks it read and goes to the job card;
+`notify_job_staff()` is called inside the decision and task functions, and assignment notices come from
+the task trigger, all in the same transaction, so the event can't happen without its notification. Opening a notification marks it read and goes to the job card;
 **Mark all as read** clears the rest.
 
 ## Data
@@ -35,10 +38,14 @@ Nobody can create them directly.
 
 ## Tests
 
+`tests/rls/tasks.test.ts` → "tells the advisor what is blocking the work", "notifies the mechanic about
+new work", and the "all tasks complete" check in "won't send a job to quality check while tasks are open".
+
 `tests/rls/estimates.test.ts` → "notifies the service advisor and owners, privately": recipients
 correct, the acting person excluded, mechanics get nothing, nobody can mark someone else's as read.
 
 ## Not yet built
 
-- More events: estimate link expiring, job overdue, job ready for delivery (later phases).
+- More events: estimate link expiring, job overdue, task overdue, job ready for delivery (later phases).
+- Grouping several new tasks on one job into a single notification.
 - Push / email / WhatsApp delivery.

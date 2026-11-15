@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requirePermission } from "@/lib/auth/session";
+import { requireAnyPermission, requirePermission } from "@/lib/auth/session";
 import { zonedLocalToUtc } from "@/lib/datetime";
 import { formValues, invalid, type ActionState } from "@/lib/forms";
 import { attachmentSchema, createJobSchema, editJobSchema, noteSchema, statusChangeSchema } from "@/lib/job-schema";
@@ -88,6 +88,7 @@ const STATUS_ERRORS: Record<string, string> = {
   status_changed: "Someone else updated this job a moment ago. The page has been refreshed — check the new status.",
   reason_required: "Give a reason for this change.",
   invalid_transition: "That step isn't available for this job any more.",
+  tasks_open: "Some tasks aren't finished yet. Complete or cancel them before quality check.",
 };
 
 export async function changeJobStatus(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
@@ -116,8 +117,9 @@ export async function changeJobStatus(_: ActionState | undefined, formData: Form
   return { success: "Status updated." };
 }
 
+// Advisors, and mechanics on jobs they're assigned to (the database checks the assignment).
 export async function addJobNote(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
-  const ctx = await requirePermission("jobs.manage");
+  const ctx = await requireAnyPermission("jobs.manage", "tasks.update");
   const parsed = noteSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return invalid(parsed.error, formData);
 
@@ -126,17 +128,19 @@ export async function addJobNote(_: ActionState | undefined, formData: FormData)
     workshop_id: ctx.workshop.workshopId,
     job_card_id: parsed.data.jobId,
     body: parsed.data.body,
-    visibility: parsed.data.visibility,
+    // Only advisors write notes the customer can see.
+    visibility: ctx.permissions.has("jobs.manage") ? parsed.data.visibility : "internal",
   });
   if (error) return { error: "We couldn't save this note.", values: formValues(formData) };
 
   revalidatePath(`/jobs/${parsed.data.jobId}`);
-  return { success: "Note added." };
+  revalidatePath(`/my-jobs/${parsed.data.jobId}`);
+  return { success: "Note added.", nonce: Date.now() };
 }
 
 // Called by the uploader after the file is already in private storage.
 export async function recordAttachment(input: unknown): Promise<ActionState> {
-  const ctx = await requirePermission("jobs.manage");
+  const ctx = await requireAnyPermission("jobs.manage", "tasks.update");
   const parsed = attachmentSchema.safeParse(input);
   if (!parsed.success) return { error: "That file can't be attached." };
   const d = parsed.data;
@@ -155,6 +159,7 @@ export async function recordAttachment(input: unknown): Promise<ActionState> {
   if (error) return { error: `We couldn't attach ${d.fileName}.` };
 
   revalidatePath(`/jobs/${d.jobId}`);
+  revalidatePath(`/my-jobs/${d.jobId}`);
   return { success: "Attached." };
 }
 

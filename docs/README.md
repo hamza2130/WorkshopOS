@@ -23,7 +23,10 @@ Docs are updated in the same change as the code they describe.
 | 10 | [Vehicle inspections](features/10-inspections.md) | 4 | Built |
 | 11 | [Labour and parts catalogue](features/11-labour-and-parts-catalogue.md) | 4 | Built (stock in Phase 7) |
 | 12 | [Estimates and customer approval](features/12-estimates-and-customer-approval.md) | 4 | Built |
-| 13 | [In-app notifications](features/13-notifications.md) | 4 | Built |
+| 13 | [In-app notifications](features/13-notifications.md) | 4–5 | Built |
+| 14 | [Tasks and mechanic assignment](features/14-tasks-and-assignment.md) | 5 | Built |
+| 15 | [Mechanic "My jobs" (phone view)](features/15-mechanic-my-jobs.md) | 5 | Built |
+| 16 | [Parts used](features/16-parts-used.md) | 5 | Built (stock in Phase 7) |
 
 Every spec uses the same sections: **What it does · Who can use it · Screens · How it works · Rules ·
 Data · Security · Code · Tests · Not yet built.**
@@ -47,6 +50,9 @@ Sources are Mermaid files in [`diagrams/`](diagrams); each has a rendered PNG ne
 | [Estimate approval flow](diagrams/estimate-approval-flow.png) | Inspection → estimate → link → customer decision |
 | [Estimate versions](diagrams/estimate-versions.png) | Why a revision always needs fresh approval |
 | [Phase 4 data](diagrams/data-model-estimates.png) | Inspections, catalogue, estimates, decisions, notifications |
+| [Task status workflow](diagrams/task-status-machine.png) | Task moves, who makes them, and the three checks on a blocked reason |
+| [Mechanic work flow](diagrams/mechanic-work-flow.png) | Approved work → tasks → mechanic's phone → blocked → quality check |
+| [Phase 5 data](diagrams/data-model-tasks.png) | Tasks, task history, parts used |
 
 ### Regenerating the PNGs
 

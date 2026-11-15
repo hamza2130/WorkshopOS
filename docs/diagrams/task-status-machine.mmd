@@ -1,0 +1,35 @@
+---
+title: Task status workflow — a blocked task always records a reason
+---
+stateDiagram-v2
+  state "To do" as pending
+  state "In progress" as in_progress
+  state "Blocked" as blocked
+  state "Done" as completed
+  state "Cancelled" as cancelled
+
+  [*] --> pending: Advisor plans the task
+  pending --> in_progress: Start
+  pending --> blocked: Blocked ✱
+  in_progress --> blocked: Blocked ✱
+  blocked --> in_progress: Resume
+  in_progress --> completed: Mark done
+  completed --> in_progress: Reopen * (advisor)
+  pending --> cancelled: Cancel * (advisor)
+  in_progress --> cancelled: Cancel * (advisor)
+  blocked --> cancelled: Cancel * (advisor)
+  completed --> [*]
+  cancelled --> [*]
+
+  note right of blocked
+    ✱ Reason enforced three times:
+    1. update_task_status() refuses a blank reason
+    2. CHECK on job_tasks: blocked ⇒ blocked_reason
+    3. CHECK on job_task_history: blocked ⇒ reason
+    The advisor and owners are notified with the reason.
+  end note
+  note left of in_progress
+    The first task started moves an Approved job
+    to In progress (system action "Work started").
+    * = a reason is required
+  end note

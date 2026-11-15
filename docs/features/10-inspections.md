@@ -11,7 +11,8 @@ customer with it.
 ## Who can use it
 
 - **Record and complete:** `jobs.manage` — owners and advisors. Mechanics join in Phase 5.
-- **Read:** anyone who can read job cards or estimates.
+- **Read:** anyone who can read job cards or estimates. Mechanics see the findings that need work on
+  jobs assigned to them ([My jobs](15-mechanic-my-jobs.md)).
 
 ## Screens
 

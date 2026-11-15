@@ -1,8 +1,9 @@
 # WorkshopOS
 
 Workshop management SaaS for independent automobile workshops: customer check-in to vehicle delivery.
-Built in gated phases — see the build plan. **Phases 1–4 are complete:** foundations, customers and
-vehicles, job cards, and inspections with estimates and customer approval.
+Built in gated phases — see the build plan. **Phases 1–5 are complete:** foundations, customers and
+vehicles, job cards, inspections with estimates and customer approval, and mechanic tasks with a
+phone view for mechanics.
 
 **Documentation:** feature specs and architecture/flow diagrams (PNG) are in [`docs/`](docs/README.md).
 
@@ -40,7 +41,7 @@ refuses to run against anything but the local stack):
 | --- | --- |
 | `npm run lint` / `npm run typecheck` | ESLint / route-type generation + `tsc` |
 | `npm test` | Unit tests (`src/**/*.test.ts`) |
-| `npm run test:rls` | Database tests: tenant isolation, roles, duplicate rules, job history, estimate versions (Phase 1–4 gates) |
+| `npm run test:rls` | Database tests: tenant isolation, roles, duplicate rules, job history, estimate versions, blocked-task reasons (Phase 1–5 gates) |
 | `npm run db:types` | Regenerate `src/lib/supabase/database.types.ts` after a migration |
 | `npm run docs:diagrams` | Render `docs/diagrams/*.mmd` to PNG (uses your installed Chrome or Edge) |
 | `npm run build` | Production build |
@@ -55,6 +56,7 @@ CI (`.github/workflows/ci.yml`) runs all of the above, including the RLS suite a
 | 2 · Customers and vehicles | Customers with duplicate-phone protection, vehicles with unique plates and transfers, append-only mileage | A duplicate phone number is caught before save |
 | 3 · Job cards | Check-in flow, 12-status workflow with reasons, permanent timeline, notes, private photo/document uploads, job board on the dashboard | Every status change is timestamped |
 | 4 · Inspection, estimate, approval | 13-area inspection, labour and parts catalogue, versioned estimates with database-computed totals, customer approval by WhatsApp link (per line, no login) or recorded by staff, notifications | A revised estimate needs fresh approval |
+| 5 · Mechanic assignment and execution | Tasks planned from approved work with assignee, priority and due time; mechanic "My jobs" phone view without prices or customer details; start / block / complete with reasons; parts used; notes and photos from the floor; job moves to In progress on the first task; quality check waits for open tasks | A blocked task always records a reason |
 
 How each feature works, who can use it and what's still missing: [`docs/features/`](docs/features).
 How the system fits together and keeps workshops apart: [`docs/architecture.md`](docs/architecture.md).

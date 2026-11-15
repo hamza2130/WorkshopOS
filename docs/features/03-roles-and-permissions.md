@@ -1,6 +1,6 @@
 # 03 · Roles and permissions
 
-**Phases 1–2 · Built**
+**Phases 1–2 · Built** (mechanic access added in Phase 5)
 
 ## What it does
 
@@ -41,18 +41,24 @@ Owner-only permissions can never be granted as extras (enforced in code and by a
 | Inspections | `jobs.manage`, `estimates.manage`, `invoices.manage`, `payments.record` | `jobs.manage` |
 | Estimates, lines, decisions | `estimates.manage`, `jobs.manage`, `invoices.manage`, `payments.record` | `estimates.manage` (decisions only via the customer link or "record decision") |
 | Labour and parts catalogue | `estimates.manage`, `workshop.settings`, `invoices.manage` (+ `inventory.manage` for parts) | `workshop.settings` (+ `inventory.manage` for parts) |
+| Tasks, task history | `jobs.manage`, `invoices.manage`, `payments.record`; mechanics on jobs where they have a task | details: `jobs.manage`; status: assignee or `jobs.manage` via `update_task_status` |
+| Parts used | as tasks, plus `inventory.manage` | advisors; assigned mechanics while the job is open |
+| Assigned job view (vehicle, complaint, findings, approved work — no prices or customer details) | `jobs.view_assigned` on jobs where they have a task, via `get_assigned_job` | — |
 | Notifications | the recipient only | written by the system only |
 | Activity log | Owner, advisor | written by the system only |
 
-Mechanics and inventory managers can't see customers yet. In Phase 5 mechanics will see the customer
-and vehicle of jobs assigned to them.
+Mechanics never see customers, prices or estimates. Since Phase 5 they see the vehicle, complaint,
+inspection findings and approved work of jobs where they have a task (see
+[My jobs](15-mechanic-my-jobs.md)), and can add staff-only notes, photos and parts there. Inventory
+managers can't see customers.
 
 ## How it works
 
 - **App:** `src/lib/auth/permissions.ts` defines roles, permissions and `permissionsFor(role, extras)`.
   `getWorkshopContext()` computes the user's permissions once per request.
 - **Pages:** `requirePageAccess(...)` → 404 if none of the listed permissions are held.
-- **Actions:** `requirePermission(...)` → refused if not held.
+- **Actions:** `requirePermission(...)` → refused if not held; `requireAnyPermission(...)` for actions
+  shared by several roles (e.g. notes by advisors and mechanics), where the database decides which rows.
 - **Navigation:** `visibleNav()` hides sections the user can't use (convenience only).
 - **Database:** the same matrix lives in the `role_permissions` table. RLS calls
   `has_workshop_permission()` / `has_any_workshop_permission()`, which include extra permissions.
