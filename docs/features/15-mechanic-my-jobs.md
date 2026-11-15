@@ -33,7 +33,9 @@ their tasks, record parts they fitted, take photos and leave notes for the team.
 - **Photos:** mechanics can add photos (default type *Inspection finding*); only advisors remove them.
 - **Notes:** mechanics' notes are always *staff only*. They see the job's staff-only notes, not notes
   written for the customer.
-- Banners: *On hold* ("ask the advisor before continuing") and *Quality check / Ready* ("work is finished").
+- A cancelled job shows "Job cancelled — no work left for you" under **Include finished**; its tasks
+  were cancelled with the job.
+- Banners: *On hold* (tasks can't be started or resumed; "ask the advisor before continuing") and *Quality check / Ready* ("work is finished").
 
 ## Rules
 

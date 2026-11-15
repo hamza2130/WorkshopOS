@@ -61,6 +61,11 @@ export function WorkPanel({
               ) : null}
             </div>
           ) : null}
+          {status === "on_hold" && live.some((t) => t.status !== "completed") ? (
+            <Alert tone="info">
+              The job is on hold: tasks can be blocked, finished or cancelled, but not started or resumed until you resume the job.
+            </Alert>
+          ) : null}
           {allDone && status === "in_progress" ? (
             <Alert tone="success">All tasks are done. Send the job to quality check when you&apos;re ready.</Alert>
           ) : null}
@@ -73,7 +78,7 @@ export function WorkPanel({
             <p className="text-sm text-slate-600">No tasks yet. Add the work the mechanics should do.</p>
           ) : null}
 
-          <TaskList jobId={jobId} tasks={tasks} userId={userId} manager mechanics={mechanics} canChange={canPlan} />
+          <TaskList jobId={jobId} tasks={tasks} userId={userId} manager mechanics={mechanics} canChange={canPlan} jobOnHold={status === "on_hold"} />
 
           {canPlan ? (
             <details className="group rounded-md ring-1 ring-slate-200 open:p-4" open={tasks.length === 0 && !untaskedLines.length}>

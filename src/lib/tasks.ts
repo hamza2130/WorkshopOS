@@ -46,15 +46,20 @@ export type TaskMove = { to: TaskStatus; label: string; needsReason: boolean; to
 /**
  * The moves a person may make from a task's current status. Mirrors
  * update_task_status() in the database, which has the final say.
+ * While the job is on hold, nothing can be started, resumed or reopened.
  */
-export function taskMoves(status: TaskStatus, { manager, assignee }: { manager: boolean; assignee: boolean }): TaskMove[] {
+export function taskMoves(
+  status: TaskStatus,
+  { manager, assignee, jobOnHold = false }: { manager: boolean; assignee: boolean; jobOnHold?: boolean },
+): TaskMove[] {
   const worker = manager || assignee;
+  const canStart = !jobOnHold;
   const moves: [allowed: boolean, move: TaskMove][] = [
-    [worker && status === "pending", { to: "in_progress", label: "Start", needsReason: false, tone: "primary" }],
+    [worker && canStart && status === "pending", { to: "in_progress", label: "Start", needsReason: false, tone: "primary" }],
     [worker && status === "in_progress", { to: "completed", label: "Mark done", needsReason: false, tone: "primary" }],
-    [worker && status === "blocked", { to: "in_progress", label: "Resume", needsReason: false, tone: "primary" }],
+    [worker && canStart && status === "blocked", { to: "in_progress", label: "Resume", needsReason: false, tone: "primary" }],
     [worker && (status === "pending" || status === "in_progress"), { to: "blocked", label: "Blocked", needsReason: true, tone: "secondary" }],
-    [manager && status === "completed", { to: "in_progress", label: "Reopen", needsReason: true, tone: "secondary" }],
+    [manager && canStart && status === "completed", { to: "in_progress", label: "Reopen", needsReason: true, tone: "secondary" }],
     [manager && OPEN_TASK.includes(status), { to: "cancelled", label: "Cancel task", needsReason: true, tone: "danger" }],
   ];
   return moves.filter(([allowed]) => allowed).map(([, move]) => move);

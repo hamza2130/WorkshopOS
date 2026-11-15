@@ -29,6 +29,14 @@ describe("taskMoves", () => {
     expect(moves("cancelled", advisor)).toEqual([]);
   });
 
+  it("offers no way to start, resume or reopen while the job is on hold", () => {
+    const onHold = { manager: true, assignee: true, jobOnHold: true };
+    expect(moves("pending", onHold)).toEqual(["Blocked->blocked", "Cancel task->cancelled"]);
+    expect(moves("in_progress", onHold)).toEqual(["Mark done->completed", "Blocked->blocked", "Cancel task->cancelled"]);
+    expect(moves("blocked", onHold)).toEqual(["Cancel task->cancelled"]);
+    expect(moves("completed", onHold)).toEqual([]);
+  });
+
   it("gives other mechanics nothing to press", () => {
     expect(moves("pending", { manager: false, assignee: false })).toEqual([]);
   });
