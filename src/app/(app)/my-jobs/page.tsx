@@ -76,13 +76,17 @@ export default async function MyJobsPage({ searchParams }: PageProps<"/my-jobs">
                       <span className="text-slate-500">Next:</span> {j.next_task}
                     </p>
                   ) : (
-                    <p className="mt-3 text-sm text-slate-600">Your tasks here are done.</p>
+                    <p className="mt-3 text-sm text-slate-600">
+                      {j.status === "cancelled" ? "Job cancelled — no work left for you." : "Your tasks here are done."}
+                    </p>
                   )}
                   <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
                     <span className="text-slate-500">{j.job_number}</span>
-                    <Badge tone="muted">
-                      {Number(j.my_open_tasks)} open of {Number(j.my_total_tasks)}
-                    </Badge>
+                    {Number(j.my_total_tasks) > 0 ? (
+                      <Badge tone="muted">
+                        {Number(j.my_open_tasks)} open of {Number(j.my_total_tasks)}
+                      </Badge>
+                    ) : null}
                     {Number(j.my_blocked_tasks) > 0 ? <Badge tone="warning">{Number(j.my_blocked_tasks)} blocked</Badge> : null}
                     {j.top_priority === "urgent" || j.top_priority === "high" ? (
                       <Badge tone="warning">{PRIORITY_LABELS[j.top_priority]}</Badge>

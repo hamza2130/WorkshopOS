@@ -122,7 +122,7 @@ export default async function MyJobPage({ params }: PageProps<"/my-jobs/[id]">) 
       </div>
 
       {job.status === "on_hold" ? (
-        <Alert tone="info">This job is on hold. Ask {job.advisor ?? "the service advisor"} before continuing.</Alert>
+        <Alert tone="info">This job is on hold, so tasks can&apos;t be started or resumed. Ask {job.advisor ?? "the service advisor"} before continuing.</Alert>
       ) : job.status === "quality_check" || job.status === "ready_for_delivery" ? (
         <Alert tone="success">Work is finished and with the advisor for quality check and delivery.</Alert>
       ) : null}
@@ -130,7 +130,7 @@ export default async function MyJobPage({ params }: PageProps<"/my-jobs/[id]">) 
       <Card className="p-4 sm:p-5">
         <h2 className="mb-3 text-base font-semibold text-slate-900">Tasks</h2>
         {tasks.length ? (
-          <TaskList jobId={job.id} tasks={tasks} userId={ctx.userId} manager={manager} large canChange={canWork} />
+          <TaskList jobId={job.id} tasks={tasks} userId={ctx.userId} manager={manager} large canChange={canWork} jobOnHold={job.status === "on_hold"} />
         ) : (
           <p className="text-sm text-slate-600">No tasks on this job.</p>
         )}

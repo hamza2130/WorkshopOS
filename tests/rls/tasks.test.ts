@@ -234,6 +234,70 @@ describe("task workflow", () => {
     expect(finished.error).toBeNull();
   });
 
+  it("stops tasks starting while the job is on hold", async () => {
+    const { job } = await approvedJob();
+    const running = await addTask(job);
+    const waiting = await addTask(job, mechanicA.id, "Bleed brake lines");
+    await move(mechanicA.client, running, "pending", "in_progress");
+    const hold = await advisorA.client.rpc("change_job_status", {
+      p_job: job,
+      p_action: "put_on_hold",
+      p_expected_status: "in_progress",
+      p_reason: "Customer asked to wait",
+    });
+    expect(hold.error).toBeNull();
+
+    expect((await move(mechanicA.client, waiting, "pending", "in_progress")).error?.message).toBe("job_on_hold");
+    expect((await move(mechanicA.client, running, "in_progress", "blocked", "Waiting for customer")).data).toBe("blocked");
+    expect((await move(mechanicA.client, running, "blocked", "in_progress")).error?.message).toBe("job_on_hold");
+  });
+
+  it("cancels open tasks with the job, keeping finished work", async () => {
+    const { job } = await approvedJob();
+    const done = await addTask(job, mechanicA.id, "Road test");
+    const running = await addTask(job);
+    const blocked = await addTask(job, mechanic2A.id, "Bleed brake lines");
+    const waiting = await addTask(job, null, "Wheel alignment");
+    await move(mechanicA.client, done, "pending", "in_progress");
+    await move(mechanicA.client, done, "in_progress", "completed");
+    await move(mechanicA.client, running, "pending", "in_progress");
+    await move(mechanic2A.client, blocked, "pending", "blocked", "Waiting for parts");
+
+    const cancel = await advisorA.client.rpc("change_job_status", {
+      p_job: job,
+      p_action: "cancel",
+      p_expected_status: "in_progress",
+      p_reason: "Customer took the car elsewhere",
+    });
+    expect(cancel.error).toBeNull();
+
+    expect((await taskRow(done))?.status).toBe("completed");
+    for (const t of [running, blocked, waiting]) {
+      expect(await taskRow(t)).toMatchObject({ status: "cancelled", blocked_reason: null });
+    }
+    const { data: history } = await admin
+      .from("job_task_history")
+      .select("task_id, to_status, reason")
+      .eq("job_card_id", job)
+      .eq("to_status", "cancelled");
+    expect(history).toHaveLength(3);
+    expect(history?.every((h) => h.reason === "Job cancelled: Customer took the car elsewhere")).toBe(true);
+
+    // Both mechanics with open work are told; nothing is left open for them.
+    for (const m of [mechanicA, mechanic2A]) {
+      const { data } = await m.client.from("notifications").select("kind, body").eq("link", `/my-jobs/${job}`).eq("kind", "job_cancelled");
+      expect(data).toEqual([{ kind: "job_cancelled", body: "Customer took the car elsewhere" }]);
+    }
+    const list = await mechanicA.client.rpc("my_assigned_jobs", { ws: wsA, p_include_closed: true });
+    const row = list.data?.find((j) => j.id === job);
+    expect(row).toMatchObject({ status: "cancelled", my_open_tasks: 0 });
+
+    // The tasks of a cancelled job stay closed.
+    expect((await move(advisorA.client, done, "completed", "in_progress", "Try again")).error?.message).toBe("job_not_in_work");
+    const edit = await advisorA.client.from("job_tasks").update({ priority: "urgent" }).eq("id", running);
+    expect(edit.error?.message).toBe("task_closed");
+  });
+
   it("lets only the assignee or an advisor move a task, and only advisors cancel or reopen", async () => {
     const { job } = await approvedJob();
     const task = await addTask(job);

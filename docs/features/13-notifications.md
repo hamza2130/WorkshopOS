@@ -15,6 +15,7 @@ customer's decision on an estimate, new work for a mechanic, a blocked task, and
 | Customer decides on an estimate (link, or recorded by staff) | The job's service advisor and every active owner, except whoever made the change |
 | A task is assigned or reassigned to someone | That person (not when they assign it to themselves); opens their [My jobs](15-mechanic-my-jobs.md) view |
 | A task is blocked | The job's service advisor and every active owner, except whoever blocked it — with the reason |
+| A job is cancelled while tasks are open | Each mechanic who still had open work on it (not whoever cancelled it) — with the job's reason |
 | The last open task is completed or cancelled | The job's service advisor and every active owner, except whoever made the change — "ready for quality check" |
 
 ## How it works

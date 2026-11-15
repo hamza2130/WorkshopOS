@@ -73,7 +73,11 @@ work and its reasons on the job card, and the job moves forward on its own when 
 - A task needs an assignee before it can start, block or complete.
 - Tasks are planned and moved only while the job is *Approved*, *Awaiting assignment*, *In progress* or
   *On hold*. From quality check on they are read-only; **Send back for rework** reopens the job for work.
-- On an *On hold* job tasks can be blocked or completed but not started or resumed.
+- On an *On hold* job tasks can be blocked, completed or cancelled but not started, resumed or
+  reopened. The Start / Resume / Reopen buttons are hidden and the Work card explains why.
+- **Cancelling the job cancels its open tasks** (To do, In progress, Blocked) in the same transaction
+  (trigger `cancel_tasks_with_job`). Each task's history gets "Job cancelled: <the job's reason>", and
+  every mechanic who still had open work is notified. Finished tasks stay *Done*.
 - A job can't move to *Quality check* while any task is open (trigger `guard_job_work_finished`).
 - Stale screens are caught: each move carries the status the person saw (`status_changed`).
 - Done and cancelled tasks can't be edited; reopen first. The approved line a task came from can't change.
@@ -101,7 +105,7 @@ work and its reasons on the job card, and the job moves forward on its own when 
 
 ## Code
 
-- Migration `20261118000001_mechanic_tasks.sql`.
+- Migrations `20261118000001_mechanic_tasks.sql`, `20261119000001_cancel_tasks_with_job.sql`.
 - `src/lib/tasks.ts` (labels, `taskMoves()` — mirrors the database rules, schemas, error messages),
   `src/lib/work.ts` (loads tasks, parts used and task history for a job).
 - `src/app/(app)/jobs/task-actions.ts` (server actions), `src/app/(app)/jobs/[id]/work-panel.tsx`,
@@ -116,7 +120,8 @@ work and its reasons on the job card, and the job moves forward on its own when 
   *To do* and *In progress*); "can't be bypassed by writing the status directly" (no column grant; guard
   trigger even for the service role; both CHECK constraints); "keeps every block and its reason in the
   task history"; "tells the advisor what is blocking the work".
-- Workflow — first task moves the job to *In progress*; quality check refused while tasks are open;
+- Workflow — first task moves the job to *In progress*; nothing starts or resumes while the job is on
+  hold; cancelling the job cancels open tasks with its reason, keeps finished ones, and tells the mechanics; quality check refused while tasks are open;
   only the assignee or an advisor moves a task, only advisors cancel or reopen; stale and invalid moves
   refused; assignees must be able to update tasks; no tasks before approval; create-from-estimate runs
   once and skips cancelled work; the mechanic is notified.

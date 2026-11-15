@@ -16,6 +16,7 @@ export function TaskList({
   mechanics = [],
   large = false,
   canChange = true,
+  jobOnHold = false,
 }: {
   jobId: string;
   tasks: TaskView[];
@@ -26,6 +27,8 @@ export function TaskList({
   large?: boolean;
   /** False while the job isn't at a stage where tasks can move (e.g. quality check). */
   canChange?: boolean;
+  /** On hold: tasks can be blocked, finished or cancelled, but not started or resumed. */
+  jobOnHold?: boolean;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   if (tasks.length === 0) return null;
@@ -33,7 +36,7 @@ export function TaskList({
   return (
     <ul className="divide-y divide-slate-100">
       {tasks.map((t) => {
-        const moves = canChange ? taskMoves(t.status, { manager, assignee: t.assigneeId === userId }) : [];
+        const moves = canChange ? taskMoves(t.status, { manager, assignee: t.assigneeId === userId, jobOnHold }) : [];
         const mine = t.assigneeId === userId;
         return (
           <li key={t.id} className={cx("py-4 first:pt-0 last:pb-0", t.status === "cancelled" && "opacity-60")}>
