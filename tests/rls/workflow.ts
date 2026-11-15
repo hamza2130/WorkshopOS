@@ -13,7 +13,9 @@ export async function draftEstimate(
   client: Client,
   ws: string,
   job: string,
-  lines: { description: string; unit_price: number; quantity?: number }[] = [{ description: "Brake pads", unit_price: 4500 }],
+  lines: { description: string; unit_price: number; quantity?: number; kind?: "labour" | "part" | "other" }[] = [
+    { description: "Brake pads", unit_price: 4500 },
+  ],
   reason?: string,
 ) {
   const created = await client.rpc("create_estimate", { p_job: job, p_reason: reason });

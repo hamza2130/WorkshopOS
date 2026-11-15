@@ -12,7 +12,8 @@ phases attach inspections, estimates, mechanic tasks, parts, invoices and paymen
 
 - **Open, edit, move, add notes and files:** `jobs.manage` — owners and advisors.
 - **Read only:** cashiers (for invoicing later).
-- **Mechanics:** see a placeholder until assignment arrives in Phase 5.
+- **Mechanics:** don't open `/jobs` (redirected to [My jobs](15-mechanic-my-jobs.md)); they work on
+  their assigned tasks from there.
 
 ## Screens
 
@@ -75,8 +76,10 @@ removed by deleting one row of `job_status_actions`.
 
 The job card's **Next step** panel leads with the right screen for the stage: *Start / Continue
 inspection*, *Prepare / Continue estimate*, or *Waiting for the customer — view estimate*. See
-[inspections](10-inspections.md) and [estimates](12-estimates-and-customer-approval.md). Phase 5 will
-drive *Start work* from mechanic assignment in the same way. On the timeline, moves made through the
+[inspections](10-inspections.md) and [estimates](12-estimates-and-customer-approval.md). Since Phase 5
+the first task a mechanic starts moves an *Approved* or *Awaiting assignment* job to *In progress*
+(⚙ *Work started*), and *Work complete — quality check* is refused while any task is open — see
+[tasks](14-tasks-and-assignment.md). The job card's **Work** and **Parts used** cards show the tasks. On the timeline, moves made through the
 customer's link show "Customer (approval link)".
 
 ## How the gate is enforced
@@ -159,6 +162,5 @@ upload, notes, hold and resume, dashboard counts and search were verified in the
 
 ## Not yet built
 
-- Mechanic tasks, assignment and the mechanic's mobile view (Phase 5).
 - Invoices and payments (Phase 6), parts used (Phase 7).
 - Printable job card / PDF.

@@ -9,7 +9,8 @@ common actions.
 
 ## Who can use it
 
-Everyone in the workshop. Content depends on permissions.
+Everyone with `dashboard.view` (every role except mechanics). Content depends on permissions.
+Mechanics are sent to [My jobs](15-mechanic-my-jobs.md) instead.
 
 ## What's on it
 

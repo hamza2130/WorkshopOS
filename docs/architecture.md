@@ -47,14 +47,19 @@ so there is no server cache that could serve one workshop's data to another.
   numbers or job status.
 - **Sensitive writes go through checked functions** (`SECURITY DEFINER`, explicit permission checks):
   `create_workshop`, `create_invitation`, `accept_invitation`, `create_job_card`, `change_job_status`,
-  `start_inspection`, `complete_inspection`, `create_estimate`, `send_estimate`, `record_estimate_decision`.
+  `start_inspection`, `complete_inspection`, `create_estimate`, `send_estimate`, `record_estimate_decision`,
+  `update_task_status`, `create_tasks_from_estimate`.
+- **Narrow read functions for mechanics**: `my_assigned_jobs` and `get_assigned_job` return only what a
+  mechanic needs for jobs they're assigned to — no prices, no customer contact details — so mechanics
+  never get read access to customers, estimates or the priced catalogue.
 - **Public, token-based functions** (no login): `get_invitation`, `get_estimate_for_customer`,
   `respond_to_estimate`. Tokens are 256-bit random; only SHA-256 hashes are stored; each returns the
   minimum data the page needs.
-- **System-driven status moves**: inspection, estimate and approval functions move the job themselves;
+- **System-driven status moves**: inspection, estimate, approval and task functions move the job themselves;
   those moves carry the permission `system`, which no one holds, so no button can fake them.
 - **Guard triggers** enforce business rules for every client: duplicate phones and plates, the last
-  active owner, mileage that goes backwards, edits to closed job cards, and job status history.
+  active owner, mileage that goes backwards, edits to closed job cards, job and task status history,
+  and quality check while tasks are still open.
 - The active workshop is chosen by an `active_workshop` cookie, but membership is re-verified on every
   request; the cookie is only a preference.
 
@@ -103,3 +108,4 @@ that proves it:
 | 2 | A duplicate phone number is caught before save | `tests/rls/customers-vehicles.test.ts` |
 | 3 | Every status change is timestamped | `tests/rls/job-cards.test.ts` |
 | 4 | A revised estimate needs fresh approval | `tests/rls/estimates.test.ts` |
+| 5 | A blocked task always records a reason | `tests/rls/tasks.test.ts` |

@@ -17,3 +17,19 @@ export async function getServiceAdvisors(workshopId: string): Promise<StaffOptio
     .filter((m) => permissionsFor(m.role, m.extra_permissions).has("jobs.manage"))
     .map((m) => ({ id: m.user_id, name: m.profiles?.full_name || m.profiles?.email || "Staff member" }));
 }
+
+// Active members who can work on tasks — the people a task can be assigned to.
+export async function getMechanics(workshopId: string): Promise<StaffOption[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("workshop_members")
+    .select("user_id, role, extra_permissions, profiles(full_name, email)")
+    .eq("workshop_id", workshopId)
+    .eq("is_active", true)
+    .order("created_at");
+  return (data ?? [])
+    .filter((m) => permissionsFor(m.role, m.extra_permissions).has("tasks.update"))
+    // Mechanics first, then owners and others who also take on work.
+    .sort((a, b) => Number(b.role === "mechanic") - Number(a.role === "mechanic"))
+    .map((m) => ({ id: m.user_id, name: m.profiles?.full_name || m.profiles?.email || "Staff member" }));
+}

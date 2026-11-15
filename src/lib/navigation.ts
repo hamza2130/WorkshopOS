@@ -9,8 +9,9 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", anyOf: [] },
-  { href: "/jobs", label: "Job Cards", anyOf: ["jobs.manage", "jobs.view_assigned"] },
+  { href: "/dashboard", label: "Dashboard", anyOf: ["dashboard.view"] },
+  { href: "/my-jobs", label: "My jobs", anyOf: ["jobs.view_assigned"] },
+  { href: "/jobs", label: "Job Cards", anyOf: ["jobs.manage"] },
   { href: "/customers", label: "Customers", anyOf: ["customers.manage"] },
   { href: "/vehicles", label: "Vehicles", anyOf: ["vehicles.manage"] },
   { href: "/estimates", label: "Estimates", anyOf: ["estimates.manage"] },

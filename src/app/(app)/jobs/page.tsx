@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { Pagination, SearchBox } from "@/components/list-controls";
 import { Badge, buttonClass, Card, cx, PageHeader } from "@/components/ui";
@@ -15,16 +16,7 @@ export const metadata: Metadata = { title: "Job cards" };
 export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const ctx = await requirePageAccess("jobs.manage", "jobs.view_assigned");
 
-  if (!ctx.permissions.has("jobs.manage")) {
-    return (
-      <>
-        <PageHeader title="My jobs" />
-        <Card className="p-8 text-center text-sm text-slate-600">
-          Jobs assigned to you will appear here once mechanic assignment is switched on.
-        </Card>
-      </>
-    );
-  }
+  if (!ctx.permissions.has("jobs.manage")) redirect("/my-jobs");
 
   const sp = await searchParams;
   const q = str(sp, "q").slice(0, 100);

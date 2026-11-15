@@ -5,7 +5,7 @@ import { FormMessage, SubmitButton } from "@/components/form";
 import { Select } from "@/components/ui";
 import { addJobNote } from "../actions";
 
-export function NoteForm({ jobId }: { jobId: string }) {
+export function NoteForm({ jobId, staffOnly = false }: { jobId: string; staffOnly?: boolean }) {
   const [state, action] = useActionState(addJobNote, undefined);
   return (
     <form action={action} className="space-y-2">
@@ -24,13 +24,17 @@ export function NoteForm({ jobId }: { jobId: string }) {
         className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-xs text-slate-600">
-          Visible to
-          <Select name="visibility" defaultValue="internal" className="w-auto py-1 text-xs">
-            <option value="internal">Staff only</option>
-            <option value="customer">Customer too</option>
-          </Select>
-        </label>
+        {staffOnly ? (
+          <span className="text-xs text-slate-500">Visible to staff only</span>
+        ) : (
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            Visible to
+            <Select name="visibility" defaultValue="internal" className="w-auto py-1 text-xs">
+              <option value="internal">Staff only</option>
+              <option value="customer">Customer too</option>
+            </Select>
+          </label>
+        )}
         <SubmitButton variant="secondary" pendingText="Adding…" className="py-1.5">
           Add note
         </SubmitButton>

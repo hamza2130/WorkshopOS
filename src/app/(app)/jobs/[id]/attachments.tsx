@@ -36,14 +36,20 @@ export function Attachments({
   workshopId,
   items,
   canEdit,
+  canRemove = canEdit,
+  defaultCategory = "vehicle_photo",
 }: {
   jobId: string;
   workshopId: string;
   items: AttachmentItem[];
+  /** Can add files. */
   canEdit: boolean;
+  /** Can remove files (advisors only). */
+  canRemove?: boolean;
+  defaultCategory?: (typeof ATTACHMENT_CATEGORIES)[number];
 }) {
   const router = useRouter();
-  const [category, setCategory] = useState<(typeof ATTACHMENT_CATEGORIES)[number]>("vehicle_photo");
+  const [category, setCategory] = useState<(typeof ATTACHMENT_CATEGORIES)[number]>(defaultCategory);
   const [busy, setBusy] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -142,7 +148,7 @@ export function Attachments({
                 <span className="truncate text-xs text-slate-600" title={item.fileName}>
                   {ATTACHMENT_CATEGORY_LABELS[item.category]}
                 </span>
-                {canEdit ? <RemoveButton jobId={jobId} attachmentId={item.id} /> : null}
+                {canRemove ? <RemoveButton jobId={jobId} attachmentId={item.id} /> : null}
               </div>
             </li>
           ))}

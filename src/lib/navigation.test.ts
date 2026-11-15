@@ -6,11 +6,11 @@ const labels = (role: Parameters<typeof permissionsFor>[0]) => visibleNav(permis
 
 describe("visibleNav", () => {
   it("shows the owner every section", () => {
-    expect(labels("owner")).toHaveLength(10);
+    expect(labels("owner")).toHaveLength(11);
   });
 
   it("shows a mechanic only their jobs", () => {
-    expect(labels("mechanic")).toEqual(["Dashboard", "Job Cards"]);
+    expect(labels("mechanic")).toEqual(["My jobs"]);
   });
 
   it("shows a cashier invoices and reports but not staff or settings", () => {

@@ -13,10 +13,14 @@ import { CLOSED, FUEL_LEVEL_LABELS, JOB_STATUS_LABELS, SYSTEM_ACTION_LABELS, typ
 import { isUuid } from "@/lib/params";
 import { whatsappLink } from "@/lib/phone";
 import { getRequestTime, isOverdue } from "@/lib/request-time";
+import { getMechanics } from "@/lib/staff";
 import { createClient } from "@/lib/supabase/server";
+import { TASK_STAGES, TASK_STATUS_LABELS } from "@/lib/tasks";
+import { loadJobWork } from "@/lib/work";
 import { Attachments, type AttachmentItem } from "./attachments";
 import { NoteForm } from "./note-form";
 import { StatusActions } from "./status-actions";
+import { WorkPanel } from "./work-panel";
 
 export const metadata: Metadata = { title: "Job card" };
 
@@ -27,7 +31,7 @@ type TimelineEvent = {
   title: string;
   detail?: string | null;
   badge?: string;
-  tone?: "status" | "note" | "file";
+  tone?: "status" | "note" | "file" | "task";
 };
 
 const name = (p: { full_name: string; email: string } | null) => p?.full_name || p?.email || "Someone";
@@ -49,7 +53,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     .maybeSingle();
   if (!job || !job.customers || !job.vehicles) notFound();
 
-  const [history, notes, files, actions, inspection, estimates] = await Promise.all([
+  const now = getRequestTime();
+  const [history, notes, files, actions, inspection, estimates, work, mechanics, approved] = await Promise.all([
     supabase
       .from("job_status_history")
       .select("id, from_status, to_status, action, reason, changed_at, profiles(full_name, email)")
@@ -68,7 +73,30 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     supabase.from("job_status_actions").select("code, label, from_status, requires_reason, tone, sort_order, permission").order("sort_order"),
     supabase.from("job_inspections").select("completed_at, job_inspection_items(outcome)").eq("job_card_id", id).maybeSingle(),
     supabase.from("estimates").select("version, status, total").eq("job_card_id", id).order("version", { ascending: false }).limit(1),
+    loadJobWork(id, tz, now),
+    getMechanics(ctx.workshop.workshopId),
+    // The approved lines of the latest approved version: what the mechanics work from.
+    supabase
+      .from("estimates")
+      .select("version, estimate_items(id, kind, description, quantity, part_number, position, approval_status)")
+      .eq("job_card_id", id)
+      .in("status", ["approved", "partially_approved"])
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+
+  const approvedLines = (approved.data?.estimate_items ?? [])
+    .filter((i) => i.approval_status === "approved")
+    .sort((a, b) => a.position - b.position);
+  // Cancelled tasks count too: the advisor dropped that work on purpose.
+  const taskTitles = new Set(work.tasks.map((t) => t.title.trim().toLowerCase()));
+  const untaskedLines = approvedLines
+    .filter((i) => i.kind !== "part" && i.description.trim().length >= 2 && !taskTitles.has(i.description.trim().slice(0, 200).toLowerCase()))
+    .map((i) => i.description);
+  const approvedParts = approvedLines
+    .filter((i) => i.kind === "part")
+    .map((i) => ({ id: i.id, description: i.description, quantity: Number(i.quantity), partNumber: i.part_number }));
 
   const active = (files.data ?? []).filter((f) => !f.removed_at);
   const { data: signed } = active.length
@@ -114,6 +142,14 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
       detail: n.body,
       tone: "note" as const,
     })),
+    ...work.events.map((e) => ({
+      key: `t${e.id}`,
+      at: e.at,
+      who: e.who,
+      title: e.from ? `Task ${TASK_STATUS_LABELS[e.to].toLowerCase()}: ${e.taskTitle}` : `Task added: ${e.taskTitle}`,
+      detail: e.reason,
+      tone: "task" as const,
+    })),
     ...(files.data ?? []).flatMap((f) => [
       {
         key: `f${f.id}`,
@@ -130,7 +166,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   ].sort((a, b) => a.at.localeCompare(b.at));
 
   const closed = CLOSED.includes(job.status);
-  const overdue = isOverdue(job.expected_delivery_at, closed, getRequestTime());
+  const overdue = isOverdue(job.expected_delivery_at, closed, now);
+  const showWork = TASK_STAGES.includes(job.status) || work.tasks.length > 0 || work.parts.length > 0;
   const holdEvent = job.status === "on_hold" ? [...(history.data ?? [])].reverse().find((h) => h.to_status === "on_hold") : null;
   const c = job.customers;
   const v = job.vehicles;
@@ -177,6 +214,10 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               <Link href={`/jobs/${job.id}/estimate`} className={buttonClass("primary", "mb-3")}>
                 Waiting for the customer — view estimate
               </Link>
+            ) : (job.status === "approved" || job.status === "awaiting_assignment") && !work.tasks.length ? (
+              <p className="mb-3 text-sm text-slate-600">
+                Plan the work below and assign mechanics. The job moves to In progress when the first task starts.
+              </p>
             ) : null}
             <StatusActions key={job.status} jobId={job.id} status={job.status} actions={available} />
           </Card>
@@ -211,6 +252,19 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               ) : null}
             </div>
           </Card>
+
+          {showWork ? (
+            <WorkPanel
+              jobId={job.id}
+              status={job.status}
+              userId={ctx.userId}
+              tasks={work.tasks}
+              parts={work.parts}
+              mechanics={mechanics}
+              approvedParts={approvedParts}
+              untaskedLines={untaskedLines}
+            />
+          ) : null}
 
           <Card className="p-6">
             <h2 className="text-sm font-semibold text-slate-900">Customer complaint</h2>
@@ -292,7 +346,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   <span
                     aria-hidden
                     className={`absolute -left-[21px] top-1 size-2.5 rounded-full ring-2 ring-white ${
-                      e.tone === "status" ? "bg-brand-600" : e.tone === "note" ? "bg-amber-500" : "bg-slate-400"
+                      e.tone === "status"
+                        ? "bg-brand-600"
+                        : e.tone === "note"
+                          ? "bg-amber-500"
+                          : e.tone === "task"
+                            ? "bg-emerald-500"
+                            : "bg-slate-400"
                     }`}
                   />
                   <p className="text-sm font-medium text-slate-900">{e.title}</p>

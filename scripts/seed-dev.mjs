@@ -39,8 +39,10 @@ const workshopId =
   existing?.id ??
   (await ownerClient.rpc("create_workshop", { p_name: "Alpha Motors", p_city: "Lahore", p_address: "12 Ferozepur Road" })).data;
 
+const clients = {};
 for (const member of staff) {
   const client = await signIn(member);
+  clients[member.role] = client;
   const { data: me } = await client.auth.getUser();
   const { data: already } = await client
     .from("workshop_members")
@@ -96,6 +98,46 @@ if (!vehicle) {
   });
 }
 
+// An approved job with tasks for the mechanic, so "My jobs" has something in it.
+const { data: city } = await ownerClient.from("vehicles").select("id").eq("workshop_id", workshopId).eq("registration_normalized", "LEA1357").maybeSingle();
+if (!city) {
+  const advisor = clients.advisor;
+  const must = (res) => {
+    if (res.error) throw res.error;
+    return res.data;
+  };
+  const customer = must(
+    await advisor.from("customers").insert({ workshop_id: workshopId, name: "Ayesha Malik", phone: "0333 4447788", whatsapp: "0333 4447788" }).select("id").single(),
+  );
+  const car = must(
+    await advisor
+      .from("vehicles")
+      .insert({ workshop_id: workshopId, customer_id: customer.id, registration_number: "LEA-1357", make: "Honda", model: "City", variant: "Aspire", year: 2019, colour: "White", fuel_type: "petrol", transmission: "automatic" })
+      .select("id")
+      .single(),
+  );
+  const job = must(
+    await advisor.rpc("create_job_card", { ws: workshopId, p_vehicle: car.id, p_complaint: "Grinding noise from the front when braking", p_mileage: 64200, p_fuel_level: "quarter" }),
+  );
+  must(await advisor.rpc("start_inspection", { p_job: job }));
+  must(await advisor.from("job_inspection_items").update({ outcome: "requires_repair", notes: "Front pads at 2mm, rotors scored" }).eq("category", "brakes"));
+  must(await advisor.rpc("complete_inspection", { p_job: job }));
+  const estimate = must(await advisor.rpc("create_estimate", { p_job: job }));
+  const lines = [
+    { kind: "labour", description: "Brake service (front axle)", unit_price: 2500, quantity: 1 },
+    { kind: "labour", description: "Skim front rotors", unit_price: 3000, quantity: 1 },
+    { kind: "part", description: "Front brake pads", unit_price: 6000, quantity: 1 },
+  ];
+  must(await advisor.from("estimate_items").insert(lines.map((l, i) => ({ workshop_id: workshopId, estimate_id: estimate, position: i, ...l }))));
+  const token = must(await advisor.rpc("send_estimate", { p_estimate: estimate }));
+  const items = must(await advisor.from("estimate_items").select("id").eq("estimate_id", estimate));
+  const anonClient = createClient(url, anon, { auth: { persistSession: false } });
+  must(await anonClient.rpc("respond_to_estimate", { p_token: token, p_approved: items.map((i) => i.id), p_customer_name: "Ayesha Malik" }));
+  const { data: mechanic } = await clients.mechanic.auth.getUser();
+  must(await advisor.rpc("create_tasks_from_estimate", { p_job: job, p_assignee: mechanic.user.id }));
+}
+
 console.log("Seeded Alpha Motors with:");
 for (const a of ACCOUNTS) console.log(`  ${a.role.padEnd(9)} ${a.email}  ${a.password}`);
 console.log("  sample: customer Usman Tariq, vehicle LEC-2468 with a checked-in job, labour and parts catalogue");
+console.log("  sample: customer Ayesha Malik, vehicle LEA-1357 with an approved job and tasks for the mechanic");

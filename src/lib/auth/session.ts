@@ -93,6 +93,14 @@ export async function requirePermission(permission: Permission): Promise<Worksho
   return ctx;
 }
 
+// For actions open to several roles, e.g. notes by advisors and assigned mechanics.
+// The database still decides which rows each of them may touch.
+export async function requireAnyPermission(...anyOf: Permission[]): Promise<WorkshopContext> {
+  const ctx = await getWorkshopContext();
+  if (!anyOf.some((p) => ctx.permissions.has(p))) throw new ForbiddenError(anyOf[0]);
+  return ctx;
+}
+
 // Use at the top of protected pages: users without access get a 404, not an error screen.
 export async function requirePageAccess(...anyOf: Permission[]): Promise<WorkshopContext> {
   const ctx = await getWorkshopContext();

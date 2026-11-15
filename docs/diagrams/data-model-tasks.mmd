@@ -1,0 +1,56 @@
+---
+title: Phase 5 data — tasks, task history, parts used
+---
+erDiagram
+  job_cards ||--o{ job_tasks : "work split into"
+  estimate_items |o--o{ job_tasks : "created from"
+  profiles |o--o{ job_tasks : "assigned to"
+  job_tasks ||--|{ job_task_history : "every status change"
+  job_cards ||--o{ job_parts_used : "parts fitted"
+  job_tasks |o--o{ job_parts_used : "for task"
+  estimate_items |o--o{ job_parts_used : "approved part"
+  parts |o--o{ job_parts_used : "catalogue part"
+
+  job_cards {
+    uuid id PK
+    enum status "in_progress set by first task start"
+  }
+  job_tasks {
+    uuid job_card_id FK
+    uuid estimate_item_id FK "optional"
+    text title
+    uuid assignee_id FK "must hold tasks.update"
+    enum priority "low normal high urgent"
+    timestamptz expected_completion_at
+    enum status "pending in_progress blocked completed cancelled"
+    text blocked_reason "CHECK: required when blocked"
+    timestamptz started_at
+    timestamptz completed_at
+  }
+  job_task_history {
+    bigint id PK "append-only"
+    enum from_status
+    enum to_status
+    text reason "CHECK: required when to_status = blocked"
+    uuid changed_by FK
+    timestamptz changed_at
+  }
+  job_parts_used {
+    uuid task_id FK "optional"
+    uuid estimate_item_id FK "approved part line"
+    uuid part_id FK "set from the line"
+    text description
+    numeric quantity
+    uuid recorded_by FK
+    timestamptz removed_at "remove, never edit"
+  }
+  estimate_items {
+    uuid id PK
+    enum approval_status
+  }
+  parts {
+    uuid id PK
+  }
+  profiles {
+    uuid id PK
+  }

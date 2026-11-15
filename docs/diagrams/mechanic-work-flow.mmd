@@ -1,0 +1,29 @@
+---
+title: From approved work to quality check
+---
+sequenceDiagram
+  autonumber
+  actor A as Service advisor
+  participant W as Job card · Work card
+  participant DB as Postgres (functions + triggers)
+  actor M as Mechanic (phone)
+  participant P as My jobs
+
+  A->>W: Create tasks from approved work, assign mechanic
+  W->>DB: create_tasks_from_estimate(job, mechanic)
+  DB-->>M: Notification "JC-0002: new task"
+  M->>P: Open My jobs → job (no prices, no customer details)
+  P->>DB: get_assigned_job(job)
+  M->>P: Start
+  P->>DB: update_task_status(task, in_progress)
+  DB->>DB: Job Approved → In progress ("Work started")
+  M->>P: Blocked… "Waiting for parts"
+  P->>DB: update_task_status(task, blocked, reason)
+  Note over DB: blank reason → refused (reason_required)
+  DB-->>A: Notification "task blocked — Waiting for parts"
+  A->>W: Sees the banner · may Put on hold
+  M->>P: Resume → Mark done · records parts used · photos · notes
+  DB-->>A: Notification "all tasks complete — ready for quality check"
+  A->>W: Work complete — quality check
+  W->>DB: change_job_status(finish_work)
+  Note over DB: refused while any task is still open (tasks_open)
