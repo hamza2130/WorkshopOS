@@ -1,0 +1,26 @@
+---
+title: Uploading check-in photos and documents
+---
+sequenceDiagram
+  autonumber
+  actor Staff
+  participant Browser
+  participant Storage as Supabase Storage<br/>(private bucket)
+  participant App as Next.js app
+  participant DB as Postgres
+
+  Staff->>Browser: Pick photos or PDFs (camera on phones)
+  Browser->>Browser: Check type (JPEG, PNG, WebP, HEIC, PDF) and size (≤ 10 MB)
+  Browser->>Storage: Upload to job-attachments/<workshop>/<job>/<random>.<ext> with the user's session
+  Storage->>DB: Policy can_upload_job_attachment(path)
+  Note over DB: Path's workshop and job must exist together,<br/>and the user needs jobs.manage there
+  Storage-->>Browser: Stored (or 403)
+  Browser->>App: recordAttachment(path, name, type, size, category)
+  App->>App: requirePermission("jobs.manage") · path must start with this workshop/job
+  App->>DB: Insert job_attachments row
+  Note over DB: RLS + check: path matches the row's workshop and job,<br/>and the file really exists in storage
+  App-->>Browser: Refresh job page
+  Browser->>App: Load job page
+  App->>Storage: createSignedUrls(paths, 1 hour)
+  Storage-->>App: Expiring links
+  App-->>Staff: Thumbnails and downloads (links expire, files never public)

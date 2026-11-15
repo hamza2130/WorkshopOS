@@ -30,11 +30,13 @@ export function VehicleForm({
   vehicleId,
   defaults = {},
   isOwner,
+  then,
 }: {
   customer?: { id: string; name: string };
   vehicleId?: string;
   defaults?: VehicleFormValues;
   isOwner: boolean;
+  then?: "checkin";
 }) {
   const [state, action] = useActionState(saveVehicle, undefined);
   const [transferState, transferAction, transferring] = useActionState(transferVehicle, undefined);
@@ -54,6 +56,7 @@ export function VehicleForm({
       <FormMessage state={transferState?.error ? transferState : state} />
       {vehicleId ? <input type="hidden" name="vehicleId" value={vehicleId} /> : null}
       {customer ? <input type="hidden" name="customerId" value={customer.id} /> : null}
+      {then ? <input type="hidden" name="then" value={then} /> : null}
 
       {dup ? (
         <div role="alert" className="space-y-3 rounded-md bg-amber-50 p-4 ring-1 ring-amber-200">
@@ -158,7 +161,7 @@ export function VehicleForm({
       </Field>
 
       <div className="flex justify-end pt-2">
-        <SubmitButton>{vehicleId ? "Save changes" : "Save vehicle"}</SubmitButton>
+        <SubmitButton>{vehicleId ? "Save changes" : then === "checkin" ? "Save and continue to job card" : "Save vehicle"}</SubmitButton>
       </div>
     </form>
   );

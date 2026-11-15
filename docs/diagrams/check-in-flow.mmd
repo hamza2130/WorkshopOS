@@ -1,0 +1,20 @@
+---
+title: Vehicle check-in — from arrival to an open job card
+---
+flowchart TD
+  arrive(["Car arrives at the workshop"]) --> newjob["Job Cards → New job card"]
+  newjob --> search["Search by plate, customer name or phone"]
+  search --> found{"Vehicle found?"}
+  found -- "yes" --> form
+  found -- "no" --> customer{"Customer exists?"}
+  customer -- "yes" --> addv["Add vehicle for that customer"]
+  customer -- "no" --> newc["New customer<br/>(duplicate phone check)"] --> addv
+  addv -- "then=checkin carries the flow back" --> form
+
+  form["Job card form<br/>shows owner, last mileage, any job already open"]
+  form --> fields["Mileage · fuel level · customer complaint ·<br/>initial observations · service advisor · expected delivery"]
+  fields --> submit{"Check in, or save as draft?"}
+  submit --> rpc["rpc create_job_card() — one transaction"]
+  rpc --> tx["• Next job number from Settings prefix, e.g. JC-0001<br/>• Status: Awaiting inspection (or Draft)<br/>• First timeline entry: checked in / created as draft<br/>• Mileage reading saved with source 'job'<br/>• Activity log: job_card.created"]
+  rpc -- "mileage lower than last reading, no note" --> back["Refused: add a note (e.g. odometer replaced)"] --> fields
+  tx --> page(["Job card page: photos, notes, timeline,<br/>and the next allowed actions"])

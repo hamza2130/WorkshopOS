@@ -1,0 +1,23 @@
+---
+title: Duplicate phone numbers are caught before save — three checks
+---
+flowchart TD
+  start(["Staff types a phone number"]) --> blur["Phone field loses focus"]
+  blur --> c1{"1 · checkPhone()<br/>same normalised number<br/>in this workshop?"}
+  c1 -- "no" --> fill["Finish the form"]
+  c1 -- "yes" --> warn["Show the existing customer(s) with a link,<br/>plus 'different person sharing this number'"]
+  warn --> choice{"Staff decides"}
+  choice -- "it's the same person" --> open(["Open the existing customer"])
+  choice -- "ticks: different person" --> fill
+  fill --> save["Save"]
+  save --> c2{"2 · saveCustomer()<br/>duplicate and not confirmed?"}
+  c2 -- "yes" --> refuse["Refused — matches shown again"]
+  refuse --> choice
+  c2 -- "no" --> c3{"3 · Database trigger guard_customer()<br/>locks the number, re-checks:<br/>duplicate and not confirmed?"}
+  c3 -- "yes" --> refuse
+  c3 -- "confirmed shared number" --> logged["Activity log: shared phone confirmed"] --> saved
+  c3 -- "no duplicate" --> saved(["Saved with the next code, e.g. C-0002"])
+
+  norm["Normalisation (same in app and database):<br/>0300 1234567 · 0300-1234567 · +92 300 1234567 ·<br/>923001234567 · 3001234567 → 923001234567"]
+  norm -.-> c1
+  norm -.-> c3

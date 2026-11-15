@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArchiveButton } from "@/components/archive-button";
+import { JobHistoryList } from "@/components/job-history-list";
 import { Alert, Badge, buttonClass, Card, PageHeader } from "@/components/ui";
 import { requirePageAccess } from "@/lib/auth/session";
 import { formatDate } from "@/lib/format";
@@ -19,7 +20,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const tz = ctx.workshop.timezone;
 
   const supabase = await createClient();
-  const [{ data: c }, { data: vehicles }] = await Promise.all([
+  const [{ data: c }, { data: vehicles }, { data: jobs }] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).eq("workshop_id", ctx.workshop.workshopId).maybeSingle(),
     supabase
       .from("vehicles")
@@ -27,6 +28,12 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       .eq("customer_id", id)
       .order("archived_at", { nullsFirst: true })
       .order("created_at"),
+    supabase
+      .from("job_cards")
+      .select("id, job_number, status, check_in_at, check_in_mileage, complaint, vehicles(registration_number)")
+      .eq("customer_id", id)
+      .order("check_in_at", { ascending: false })
+      .limit(50),
   ]);
   if (!c) notFound();
 
@@ -148,10 +155,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
             )}
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-sm font-semibold text-slate-900">Repair history, estimates and invoices</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Job cards, estimates, invoices, payments and balances for this customer will appear here as those modules ship.
+          <Card className="overflow-hidden">
+            <h2 className="border-b border-slate-200 px-6 py-3 text-sm font-semibold text-slate-900">
+              Repair history ({jobs?.length ?? 0})
+            </h2>
+            <JobHistoryList
+              jobs={(jobs ?? []).map((j) => ({ ...j, label: j.vehicles?.registration_number }))}
+              timeZone={tz}
+              empty="No job cards yet."
+            />
+            <p className="border-t border-slate-100 px-6 py-3 text-xs text-slate-500">
+              Estimates, invoices, payments and balances will appear here as those modules ship.
             </p>
           </Card>
         </div>

@@ -20,7 +20,9 @@ export function SubmitButton({
   name?: string;
   value?: string;
 }) {
-  const { pending } = useFormStatus();
+  const { pending, data } = useFormStatus();
+  // With several submit buttons in one form, only the one that was pressed says it's working.
+  const pressed = pending && (!name || data?.get(name) === value);
   return (
     <button
       type="submit"
@@ -30,7 +32,7 @@ export function SubmitButton({
       aria-disabled={pending}
       className={buttonClass(variant, className)}
     >
-      {pending ? (pendingText ?? "Saving…") : children}
+      {pressed ? (pendingText ?? "Saving…") : children}
     </button>
   );
 }

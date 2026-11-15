@@ -5,6 +5,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { ROLE_LABELS, type Role } from "@/lib/auth/permissions";
 import { requirePageAccess } from "@/lib/auth/session";
 import { formatDateTime } from "@/lib/format";
+import { isJobStatus, JOB_STATUS_LABELS } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Activity" };
@@ -17,13 +18,23 @@ type Meta = {
   user_id?: string;
   fields?: string[];
   reason?: string;
+  file_name?: string;
 };
 
-type Names = { people: Map<string, string>; customers: Map<string, string>; vehicles: Map<string, string> };
+const statusLabel = (s?: string) => (s && isJobStatus(s) ? JOB_STATUS_LABELS[s] : s ?? "?");
 
-function record(kind: "customers" | "vehicles", id: string | null | undefined, names: Names): ReactNode {
+type Names = {
+  people: Map<string, string>;
+  customers: Map<string, string>;
+  vehicles: Map<string, string>;
+  jobs: Map<string, string>;
+};
+
+const FALLBACK = { customers: "a customer", vehicles: "a vehicle", jobs: "a job card" };
+
+function record(kind: "customers" | "vehicles" | "jobs", id: string | null | undefined, names: Names): ReactNode {
   if (!id) return "a record";
-  const label = names[kind].get(id) ?? (kind === "customers" ? "a customer" : "a vehicle");
+  const label = names[kind].get(id) ?? FALLBACK[kind];
   return (
     <Link href={`/${kind}/${id}`} className="font-medium text-brand-700 hover:underline">
       {label}
@@ -80,6 +91,19 @@ function describe(action: string, entityId: string | null, meta: Meta, names: Na
       );
     case "vehicle.duplicate_registration_allowed":
       return <>allowed a duplicate registration for {record("vehicles", entityId, names)}: “{meta.reason}”</>;
+    case "job_card.created":
+      return <>opened job card {record("jobs", entityId, names)}</>;
+    case "job_card.updated":
+      return <>updated {record("jobs", entityId, names)}{fields ? ` (${fields})` : ""}</>;
+    case "job_card.status_changed":
+      return (
+        <>
+          moved {record("jobs", entityId, names)} from {statusLabel(meta.from)} to {statusLabel(meta.to)}
+          {meta.reason ? ` — “${meta.reason}”` : ""}
+        </>
+      );
+    case "job_card.attachment_removed":
+      return <>removed {meta.file_name} from {record("jobs", entityId, names)}</>;
     default:
       return action;
   }
@@ -102,16 +126,19 @@ export default async function ActivityPage() {
   const personIds = ids((_, m) => [m.user_id]);
   const customerIds = ids((e, m) => (e.entity_type === "customer" ? [e.entity_id] : e.action === "vehicle.transferred" ? [m.from, m.to] : []));
   const vehicleIds = ids((e) => (e.entity_type === "vehicle" ? [e.entity_id] : []));
+  const jobIds = ids((e) => (e.entity_type === "job_card" ? [e.entity_id] : []));
 
-  const [people, customers, vehicles] = await Promise.all([
+  const [people, customers, vehicles, jobs] = await Promise.all([
     personIds.length ? supabase.from("profiles").select("id, full_name, email").in("id", personIds) : { data: [] },
     customerIds.length ? supabase.from("customers").select("id, name").in("id", customerIds) : { data: [] },
     vehicleIds.length ? supabase.from("vehicles").select("id, registration_number").in("id", vehicleIds) : { data: [] },
+    jobIds.length ? supabase.from("job_cards").select("id, job_number").in("id", jobIds) : { data: [] },
   ]);
   const names: Names = {
     people: new Map((people.data ?? []).map((p) => [p.id, p.full_name || p.email])),
     customers: new Map((customers.data ?? []).map((c) => [c.id, c.name])),
     vehicles: new Map((vehicles.data ?? []).map((v) => [v.id, v.registration_number])),
+    jobs: new Map((jobs.data ?? []).map((j) => [j.id, j.job_number])),
   };
 
   return (

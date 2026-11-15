@@ -86,6 +86,7 @@ export async function saveCustomer(_: CustomerState | undefined, formData: FormD
 
   revalidatePath("/customers");
   const id = result.data.id;
+  if (formData.get("then") === "checkin") redirect(`/vehicles/new?customerId=${id}&then=checkin`);
   redirect(formData.get("intent") === "add-vehicle" ? `/vehicles/new?customerId=${id}` : `/customers/${id}`);
 }
 

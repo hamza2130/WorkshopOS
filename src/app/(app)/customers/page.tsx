@@ -65,7 +65,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
                   <th scope="col" className="px-6 py-2.5 font-medium">Customer</th>
                   <th scope="col" className="px-6 py-2.5 font-medium">Phone</th>
                   <th scope="col" className="px-6 py-2.5 text-right font-medium">Vehicles</th>
-                  <th scope="col" className="hidden px-6 py-2.5 font-medium md:table-cell">Added</th>
+                  <th scope="col" className="hidden px-6 py-2.5 text-right font-medium sm:table-cell">Jobs</th>
+                  <th scope="col" className="hidden px-6 py-2.5 font-medium md:table-cell">Last visit</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -84,7 +85,10 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
                     </td>
                     <td className="px-6 py-3 text-slate-700">{c.phone}</td>
                     <td className="px-6 py-3 text-right tabular-nums text-slate-700">{c.vehicle_count}</td>
-                    <td className="hidden px-6 py-3 text-slate-600 md:table-cell">{formatDate(c.created_at, ctx.workshop.timezone)}</td>
+                    <td className="hidden px-6 py-3 text-right tabular-nums text-slate-700 sm:table-cell">{c.job_count}</td>
+                    <td className="hidden px-6 py-3 text-slate-600 md:table-cell">
+                      {c.last_visit ? formatDate(c.last_visit, ctx.workshop.timezone) : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

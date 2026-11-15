@@ -1,0 +1,14 @@
+---
+title: Registration numbers are unique per workshop, with an authorised exception
+---
+flowchart TD
+  start(["Staff saves a vehicle"]) --> norm["Normalise the plate:<br/>LEA-1234 · lea 1234 · LEA1234 → LEA1234"]
+  norm --> exists{"Plate already in<br/>this workshop?"}
+  exists -- "no" --> saved(["Vehicle saved · first mileage reading recorded"])
+  exists -- "yes" --> panel["Show who owns it, and the options"]
+  panel --> o1["Open existing vehicle"]
+  panel --> o2["Transfer it to this customer"]
+  panel --> o3{"Owner only:<br/>register anyway, with a reason"}
+  o2 --> moved(["Vehicle's owner changes · mileage and job history move with it ·<br/>activity log: vehicle.transferred (from → to)"])
+  o3 -- "advisor or no reason" --> blocked["Refused by the database trigger guard_vehicle()"]
+  o3 -- "owner + reason" --> dup(["Second vehicle saved · reason stored on the vehicle ·<br/>activity log: duplicate registration allowed"])

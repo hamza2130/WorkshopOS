@@ -2,17 +2,32 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, buttonClass, Card, PageHeader } from "@/components/ui";
 import { getWorkshopContext } from "@/lib/auth/session";
+import { IN_WORKSHOP, JOB_STATUS_LABELS, type JobStatus } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Dashboard" };
+
+// Stages shown on the board, in workflow order.
+const BOARD: JobStatus[] = [
+  "awaiting_inspection",
+  "awaiting_estimate",
+  "awaiting_approval",
+  "approved",
+  "awaiting_assignment",
+  "in_progress",
+  "quality_check",
+  "ready_for_delivery",
+  "on_hold",
+];
 
 export default async function DashboardPage() {
   const ctx = await getWorkshopContext();
   const supabase = await createClient();
   const isOwner = ctx.workshop.role === "owner";
+  const canJobs = ctx.permissions.has("jobs.manage");
   const wsId = ctx.workshop.workshopId;
 
-  const [members, invites, settingsSaved] = await Promise.all([
+  const [members, invites, settingsSaved, counts] = await Promise.all([
     supabase.from("workshop_members").select("id", { count: "exact", head: true }).eq("workshop_id", wsId).eq("is_active", true),
     isOwner
       ? supabase
@@ -24,21 +39,21 @@ export default async function DashboardPage() {
           .gt("expires_at", new Date().toISOString())
       : Promise.resolve({ count: 0 }),
     isOwner
-      ? supabase
-          .from("activity_logs")
-          .select("id", { count: "exact", head: true })
-          .eq("workshop_id", wsId)
-          .eq("action", "workshop.updated")
+      ? supabase.from("activity_logs").select("id", { count: "exact", head: true }).eq("workshop_id", wsId).eq("action", "workshop.updated")
       : Promise.resolve({ count: 0 }),
+    canJobs ? supabase.rpc("job_status_counts", { ws: wsId }) : Promise.resolve({ data: [] }),
   ]);
   const teamSize = members.count ?? 1;
   const pendingInvites = invites.count ?? 0;
+  const byStatus = new Map((counts.data ?? []).map((r) => [r.status, Number(r.job_count)]));
+  const inWorkshop = IN_WORKSHOP.reduce((sum, s) => sum + (byStatus.get(s) ?? 0), 0);
 
   const steps = [
     { done: true, label: "Create your workshop", href: undefined },
     { done: teamSize > 1, label: "Invite your team", href: "/employees", note: pendingInvites ? `${pendingInvites} invite(s) pending` : undefined },
     { done: (settingsSaved.count ?? 0) > 0, label: "Review tax and numbering settings", href: "/settings" },
   ];
+  const setupDone = steps.every((s) => s.done);
 
   return (
     <>
@@ -47,33 +62,61 @@ export default async function DashboardPage() {
         description={`${ctx.workshop.workshopName} · ${teamSize} active team member${teamSize === 1 ? "" : "s"}`}
       />
 
-      {ctx.permissions.has("customers.manage") || ctx.permissions.has("vehicles.manage") ? (
-        <div className="mb-6 flex flex-wrap gap-3">
-          {ctx.permissions.has("customers.manage") ? (
-            <>
-              <Link href="/customers/new" className={buttonClass("primary")}>
-                New customer
-              </Link>
-              <Link href="/customers" className={buttonClass("secondary")}>
-                Find customer
-              </Link>
-            </>
+      <div className="mb-6 flex flex-wrap gap-3">
+        {canJobs ? (
+          <Link href="/jobs/new" className={buttonClass("primary")}>
+            New job card
+          </Link>
+        ) : null}
+        {ctx.permissions.has("customers.manage") ? (
+          <Link href="/customers/new" className={buttonClass("secondary")}>
+            New customer
+          </Link>
+        ) : null}
+        {ctx.permissions.has("vehicles.manage") ? (
+          <Link href="/vehicles" className={buttonClass("secondary")}>
+            Find vehicle
+          </Link>
+        ) : null}
+      </div>
+
+      {canJobs ? (
+        <Card className="mb-6 p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-base font-semibold text-slate-900">In the workshop now</h2>
+            <Link href="/jobs" className="text-sm text-brand-700 hover:underline">
+              {inWorkshop} vehicle{inWorkshop === 1 ? "" : "s"} · open list
+            </Link>
+          </div>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+            {BOARD.map((status) => {
+              const n = byStatus.get(status) ?? 0;
+              return (
+                <li key={status}>
+                  <Link
+                    href={`/jobs?status=${status}`}
+                    className="block rounded-md px-4 py-3 ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300"
+                  >
+                    <span className="block text-2xl font-semibold tabular-nums text-slate-900">{n}</span>
+                    <span className="text-sm text-slate-600">{JOB_STATUS_LABELS[status]}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {byStatus.get("draft") ? (
+            <p className="mt-3 text-sm text-slate-600">
+              <Link href="/jobs?view=draft" className="text-brand-700 hover:underline">
+                {byStatus.get("draft")} draft job card{byStatus.get("draft") === 1 ? "" : "s"}
+              </Link>{" "}
+              not checked in yet.
+            </p>
           ) : null}
-          {ctx.permissions.has("vehicles.manage") ? (
-            <>
-              <Link href="/vehicles/new" className={buttonClass("secondary")}>
-                Add vehicle
-              </Link>
-              <Link href="/vehicles" className={buttonClass("secondary")}>
-                Find vehicle
-              </Link>
-            </>
-          ) : null}
-        </div>
+        </Card>
       ) : null}
 
-      {isOwner ? (
-        <Card className="p-6">
+      {isOwner && !setupDone ? (
+        <Card className="mb-6 p-6">
           <h2 className="text-base font-semibold text-slate-900">Get your workshop ready</h2>
           <ol className="mt-4 divide-y divide-slate-100">
             {steps.map((step) => (
@@ -98,20 +141,20 @@ export default async function DashboardPage() {
             ))}
           </ol>
         </Card>
-      ) : (
-        <Card className="p-6">
-          <h2 className="text-base font-semibold text-slate-900">You&apos;re all set</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Job cards, customers and vehicles are being added next. You&apos;ll see your work here as soon as they arrive.
-          </p>
-        </Card>
-      )}
+      ) : null}
 
-      <Card className="mt-6 p-6">
+      {!canJobs ? (
+        <Card className="mb-6 p-6">
+          <h2 className="text-base font-semibold text-slate-900">You&apos;re all set</h2>
+          <p className="mt-1 text-sm text-slate-600">Your work will appear here as the modules for your role are switched on.</p>
+        </Card>
+      ) : null}
+
+      <Card className="p-6">
         <h2 className="text-base font-semibold text-slate-900">Coming next</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Live job counts, today&apos;s invoiced amount and payments collected (shown separately), outstanding balances
-          and low-stock alerts will appear here as each module ships.
+          Today&apos;s invoiced amount and payments collected (shown separately), outstanding balances and low-stock alerts
+          will appear here as those modules ship.
         </p>
       </Card>
     </>

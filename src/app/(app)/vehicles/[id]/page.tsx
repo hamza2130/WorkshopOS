@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArchiveButton } from "@/components/archive-button";
+import { JobHistoryList } from "@/components/job-history-list";
 import { Alert, Badge, buttonClass, Card, PageHeader } from "@/components/ui";
 import { requirePageAccess } from "@/lib/auth/session";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -26,7 +27,7 @@ export default async function VehiclePage({ params }: PageProps<"/vehicles/[id]"
   const tz = ctx.workshop.timezone;
 
   const supabase = await createClient();
-  const [{ data: v }, { data: readings }] = await Promise.all([
+  const [{ data: v }, { data: readings }, { data: jobs }] = await Promise.all([
     supabase
       .from("vehicles")
       .select("*, customers(id, name, code, phone)")
@@ -38,6 +39,12 @@ export default async function VehiclePage({ params }: PageProps<"/vehicles/[id]"
       .select("id, reading, source, note, recorded_at, profiles(full_name, email)")
       .eq("vehicle_id", id)
       .order("recorded_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("job_cards")
+      .select("id, job_number, status, check_in_at, check_in_mileage, complaint")
+      .eq("vehicle_id", id)
+      .order("check_in_at", { ascending: false })
       .limit(50),
   ]);
   if (!v) notFound();
@@ -164,12 +171,16 @@ export default async function VehiclePage({ params }: PageProps<"/vehicles/[id]"
             )}
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-sm font-semibold text-slate-900">Service history</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Every completed job card for this vehicle — complaints, inspections, parts replaced and invoices — will be listed
-              here once job cards arrive. Past entries are never overwritten.
-            </p>
+          <Card className="overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-6 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">Service history ({jobs?.length ?? 0})</h2>
+              {!v.archived_at && ctx.permissions.has("jobs.manage") ? (
+                <Link href={`/jobs/new?vehicleId=${v.id}`} className={buttonClass("primary", "py-1.5")}>
+                  New job card
+                </Link>
+              ) : null}
+            </div>
+            <JobHistoryList jobs={jobs ?? []} timeZone={tz} empty="No job cards for this vehicle yet." />
           </Card>
         </div>
       </div>

@@ -167,6 +167,11 @@ describe("customer records", () => {
     expect(byName.data?.map((c) => c.name)).toEqual(["Bilal Ahmed"]);
   });
 
+  it("doesn't treat a customer code as a partial phone number", async () => {
+    const res = await advisorA.client.rpc("search_customers", { ws: wsA, q: "C-0001" });
+    expect(res.data?.map((c) => c.code)).toEqual(["C-0001"]);
+  });
+
   it("treats % and _ in a search as plain text", async () => {
     for (const q of ["%", "_", "\\"]) {
       const res = await advisorA.client.rpc("search_customers", { ws: wsA, q });

@@ -1,0 +1,39 @@
+---
+title: WorkshopOS system architecture
+---
+flowchart LR
+  subgraph browser["Browser — workshop staff on desktop or phone"]
+    ui["Pages and forms<br/>React 19, Tailwind"]
+  end
+
+  subgraph next["Next.js 16 app (Vercel or Node host)"]
+    proxy["proxy.ts<br/>refreshes session cookie<br/>redirects signed-out visitors"]
+    pages["Server Components<br/>render pages per request"]
+    actions["Server Actions<br/>Zod validation +<br/>requirePermission()"]
+    dal["Data access layer<br/>getWorkshopContext():<br/>user, workshop, role, permissions"]
+  end
+
+  subgraph supa["Supabase"]
+    auth["Auth<br/>email + password<br/>PKCE email links"]
+    rest["PostgREST API<br/>anon key + user's JWT<br/>(never the service key)"]
+    db[("Postgres<br/>row-level security on every table<br/>guard triggers, audit log")]
+    storage["Storage<br/>private bucket job-attachments"]
+    mail["SMTP<br/>(Mailpit locally)"]
+  end
+
+  ci["GitHub Actions CI<br/>lint · types · unit tests · build<br/>DB tests on a fresh Supabase"]
+
+  ui -- "every request" --> proxy
+  proxy --> pages
+  proxy --> actions
+  ui -- "form posts" --> actions
+  ui -- "photo uploads<br/>(user session)" --> storage
+  pages --> dal
+  actions --> dal
+  dal --> rest
+  rest --> db
+  storage -- "storage policies<br/>check membership" --> db
+  proxy -. "getClaims()" .-> auth
+  auth --- db
+  auth --> mail
+  ci -. "runs migrations<br/>and tests" .-> db

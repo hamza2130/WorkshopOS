@@ -1,0 +1,27 @@
+---
+title: Three layers of access control — one mistake can't expose another workshop's data
+---
+flowchart TB
+  req(["Request from a signed-in staff member"]) --> ui
+
+  subgraph ui["Layer 3 · UI — convenience only"]
+    nav["Navigation and buttons show only what the role can use"]
+  end
+
+  subgraph server["Layer 2 · Next.js server"]
+    page["Protected pages call requirePageAccess() → 404 if not allowed"]
+    action["Every server action calls requirePermission() → refused if not allowed"]
+    zod["Every input is validated with Zod"]
+  end
+
+  subgraph db["Layer 1 · Postgres — authoritative"]
+    rls["Row-level security on every table:<br/>row's workshop_id must match an active membership"]
+    perms["role_permissions table + per-employee extra permissions<br/>(mirrors src/lib/auth/permissions.ts, test-checked)"]
+    grants["Column grants, deny by default:<br/>workshop_id, codes, job status are not client-writable"]
+    fns["Checked functions for sensitive writes:<br/>create_workshop · create_invitation · accept_invitation<br/>create_job_card · change_job_status"]
+    trig["Guard triggers:<br/>duplicate phone · duplicate plate · last owner<br/>mileage decrease · closed job edits · status history"]
+  end
+
+  ui --> server
+  server -- "anon key + user's JWT only" --> db
+  db --> rows[("Only this workshop's rows,<br/>only the allowed columns")]

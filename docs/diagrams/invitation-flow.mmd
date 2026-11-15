@@ -1,0 +1,27 @@
+---
+title: Inviting an employee by one-time link
+---
+sequenceDiagram
+  autonumber
+  actor Owner
+  participant App as Next.js app
+  participant DB as Postgres
+  actor Employee
+
+  Owner->>App: Invite email + role (advisor, mechanic, inventory, cashier)
+  App->>App: requirePermission("staff.manage")
+  App->>DB: rpc create_invitation()
+  Note over DB: Owner check · random 32-byte token · only its SHA-256 hash is stored ·<br/>older pending invite for that email revoked · activity logged
+  DB-->>App: Raw token (returned once, never stored)
+  App-->>Owner: Invite link with Copy and Share on WhatsApp
+  Owner-->>Employee: Sends the link (WhatsApp or any channel)
+  Employee->>App: Opens /invite/<token>
+  App->>DB: rpc get_invitation(token)
+  DB-->>App: Workshop name, role, invited email, status
+  alt Not signed in
+    Employee->>App: Register or log in with the invited email (next=/invite/<token>)
+  end
+  Employee->>App: Accept and join
+  App->>DB: rpc accept_invitation(token)
+  Note over DB: Valid, not expired, not revoked, email matches →<br/>membership with that role · invite marked used · activity logged
+  App-->>Employee: Dashboard with the role's navigation
