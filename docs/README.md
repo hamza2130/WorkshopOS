@@ -20,6 +20,10 @@ Docs are updated in the same change as the code they describe.
 | 07 | [Vehicles and mileage history](features/07-vehicles-and-mileage.md) | 2 | Built |
 | 08 | [Job cards](features/08-job-cards.md) | 3 | Built |
 | 09 | [Dashboard](features/09-dashboard.md) | 1–3 | Built (job board); finance tiles later |
+| 10 | [Vehicle inspections](features/10-inspections.md) | 4 | Built |
+| 11 | [Labour and parts catalogue](features/11-labour-and-parts-catalogue.md) | 4 | Built (stock in Phase 7) |
+| 12 | [Estimates and customer approval](features/12-estimates-and-customer-approval.md) | 4 | Built |
+| 13 | [In-app notifications](features/13-notifications.md) | 4 | Built |
 
 Every spec uses the same sections: **What it does · Who can use it · Screens · How it works · Rules ·
 Data · Security · Code · Tests · Not yet built.**
@@ -38,8 +42,11 @@ Sources are Mermaid files in [`diagrams/`](diagrams); each has a rendered PNG ne
 | [Duplicate phone check](diagrams/duplicate-phone-check.png) | The three checks that stop duplicate customers |
 | [Registration check](diagrams/vehicle-registration-check.png) | Duplicate plates: open, transfer, or owner override |
 | [Check-in flow](diagrams/check-in-flow.png) | From a car arriving to an open job card |
-| [Job status workflow](diagrams/job-status-machine.png) | All 12 statuses and the allowed moves |
+| [Job status workflow](diagrams/job-status-machine.png) | All 12 statuses, the allowed moves, and which are system-driven |
 | [Attachment upload](diagrams/job-attachment-upload.png) | How photos reach private storage |
+| [Estimate approval flow](diagrams/estimate-approval-flow.png) | Inspection → estimate → link → customer decision |
+| [Estimate versions](diagrams/estimate-versions.png) | Why a revision always needs fresh approval |
+| [Phase 4 data](diagrams/data-model-estimates.png) | Inspections, catalogue, estimates, decisions, notifications |
 
 ### Regenerating the PNGs
 

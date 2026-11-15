@@ -57,6 +57,96 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"estimate_decisions": {
+                  Row: {
+                    "approved_item_ids": (string)[],"approved_total": number,"customer_name": string | null,"decided_at": string,"decision": Database["public"]['Enums']["estimate_status"],"declined_item_ids": (string)[],"estimate_id": string,"id": string,"method": Database["public"]['Enums']["decision_method"],"note": string | null,"recorded_by": string | null,"version": number,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approved_item_ids"?: (string)[],"approved_total": number,"customer_name"?: string | null,"decided_at"?: string,"decision": Database["public"]['Enums']["estimate_status"],"declined_item_ids"?: (string)[],"estimate_id": string,"id"?: string,"method": Database["public"]['Enums']["decision_method"],"note"?: string | null,"recorded_by"?: string | null,"version": number,"workshop_id": string
+                  }
+                  Update: {
+                    "approved_item_ids"?: (string)[],"approved_total"?: number,"customer_name"?: string | null,"decided_at"?: string,"decision"?: Database["public"]['Enums']["estimate_status"],"declined_item_ids"?: (string)[],"estimate_id"?: string,"id"?: string,"method"?: Database["public"]['Enums']["decision_method"],"note"?: string | null,"recorded_by"?: string | null,"version"?: number,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "estimate_decisions_recorded_by_fkey"
+      columns: ["recorded_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "estimate_decisions_workshop_id_estimate_id_fkey"
+      columns: ["workshop_id","estimate_id"]
+isOneToOne: false
+      referencedRelation: "estimates"
+      referencedColumns: ["workshop_id","id"]
+    }
+                  ]
+                },"estimate_items": {
+                  Row: {
+                    "approval_status": Database["public"]['Enums']["approval_status"],"created_at": string,"description": string,"discount": number,"estimate_id": string,"id": string,"inspection_category": Database["public"]['Enums']["inspection_category"] | null,"kind": Database["public"]['Enums']["estimate_item_kind"],"labour_item_id": string | null,"line_subtotal": number | null,"line_total": number | null,"part_id": string | null,"part_number": string | null,"position": number,"quantity": number,"source": Database["public"]['Enums']["estimate_item_source"],"taxable": boolean,"unit_price": number,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approval_status"?: Database["public"]['Enums']["approval_status"],"created_at"?: string,"description": string,"discount"?: number,"estimate_id": string,"id"?: string,"inspection_category"?: Database["public"]['Enums']["inspection_category"] | null,"kind": Database["public"]['Enums']["estimate_item_kind"],"labour_item_id"?: string | null,"line_subtotal"?: never,"line_total"?: never,"part_id"?: string | null,"part_number"?: string | null,"position"?: number,"quantity"?: number,"source"?: Database["public"]['Enums']["estimate_item_source"],"taxable"?: boolean,"unit_price": number,"workshop_id": string
+                  }
+                  Update: {
+                    "approval_status"?: Database["public"]['Enums']["approval_status"],"created_at"?: string,"description"?: string,"discount"?: number,"estimate_id"?: string,"id"?: string,"inspection_category"?: Database["public"]['Enums']["inspection_category"] | null,"kind"?: Database["public"]['Enums']["estimate_item_kind"],"labour_item_id"?: string | null,"line_subtotal"?: never,"line_total"?: never,"part_id"?: string | null,"part_number"?: string | null,"position"?: number,"quantity"?: number,"source"?: Database["public"]['Enums']["estimate_item_source"],"taxable"?: boolean,"unit_price"?: number,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "estimate_items_workshop_id_estimate_id_fkey"
+      columns: ["workshop_id","estimate_id"]
+isOneToOne: false
+      referencedRelation: "estimates"
+      referencedColumns: ["workshop_id","id"]
+    },{
+      foreignKeyName: "estimate_items_workshop_id_labour_item_id_fkey"
+      columns: ["workshop_id","labour_item_id"]
+isOneToOne: false
+      referencedRelation: "labour_items"
+      referencedColumns: ["workshop_id","id"]
+    },{
+      foreignKeyName: "estimate_items_workshop_id_part_id_fkey"
+      columns: ["workshop_id","part_id"]
+isOneToOne: false
+      referencedRelation: "parts"
+      referencedColumns: ["workshop_id","id"]
+    }
+                  ]
+                },"estimates": {
+                  Row: {
+                    "approval_expires_at": string | null,"approval_token_hash": string | null,"closed_at": string | null,"created_at": string,"created_by": string | null,"customer_note": string | null,"decided_at": string | null,"discount_total": number,"estimated_completion": string | null,"id": string,"job_card_id": string,"sent_at": string | null,"sent_by": string | null,"status": Database["public"]['Enums']["estimate_status"],"subtotal": number,"tax_label": string,"tax_rate": number,"tax_total": number,"terms": string | null,"total": number,"updated_at": string,"version": number,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approval_expires_at"?: string | null,"approval_token_hash"?: string | null,"closed_at"?: string | null,"created_at"?: string,"created_by"?: string | null,"customer_note"?: string | null,"decided_at"?: string | null,"discount_total"?: number,"estimated_completion"?: string | null,"id"?: string,"job_card_id": string,"sent_at"?: string | null,"sent_by"?: string | null,"status"?: Database["public"]['Enums']["estimate_status"],"subtotal"?: number,"tax_label": string,"tax_rate": number,"tax_total"?: number,"terms"?: string | null,"total"?: number,"updated_at"?: string,"version": number,"workshop_id": string
+                  }
+                  Update: {
+                    "approval_expires_at"?: string | null,"approval_token_hash"?: string | null,"closed_at"?: string | null,"created_at"?: string,"created_by"?: string | null,"customer_note"?: string | null,"decided_at"?: string | null,"discount_total"?: number,"estimated_completion"?: string | null,"id"?: string,"job_card_id"?: string,"sent_at"?: string | null,"sent_by"?: string | null,"status"?: Database["public"]['Enums']["estimate_status"],"subtotal"?: number,"tax_label"?: string,"tax_rate"?: number,"tax_total"?: number,"terms"?: string | null,"total"?: number,"updated_at"?: string,"version"?: number,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "estimates_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "estimates_sent_by_fkey"
+      columns: ["sent_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "estimates_workshop_id_job_card_id_fkey"
+      columns: ["workshop_id","job_card_id"]
+isOneToOne: false
+      referencedRelation: "job_cards"
+      referencedColumns: ["workshop_id","id"]
+    }
+                  ]
                 },"job_attachments": {
                   Row: {
                     "caption": string | null,"category": string,"content_type": string,"file_name": string,"id": string,"job_card_id": string,"removed_at": string | null,"removed_by": string | null,"size_bytes": number,"storage_path": string,"uploaded_at": string,"uploaded_by": string | null,"workshop_id": string
@@ -133,6 +223,64 @@ isOneToOne: false
       referencedColumns: ["workshop_id","id"]
     }
                   ]
+                },"job_inspection_items": {
+                  Row: {
+                    "category": Database["public"]['Enums']["inspection_category"],"id": string,"inspection_id": string,"notes": string | null,"outcome": Database["public"]['Enums']["inspection_outcome"],"updated_at": string,"updated_by": string | null,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category": Database["public"]['Enums']["inspection_category"],"id"?: string,"inspection_id": string,"notes"?: string | null,"outcome"?: Database["public"]['Enums']["inspection_outcome"],"updated_at"?: string,"updated_by"?: string | null,"workshop_id": string
+                  }
+                  Update: {
+                    "category"?: Database["public"]['Enums']["inspection_category"],"id"?: string,"inspection_id"?: string,"notes"?: string | null,"outcome"?: Database["public"]['Enums']["inspection_outcome"],"updated_at"?: string,"updated_by"?: string | null,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_inspection_items_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "job_inspection_items_workshop_id_inspection_id_fkey"
+      columns: ["workshop_id","inspection_id"]
+isOneToOne: false
+      referencedRelation: "job_inspections"
+      referencedColumns: ["workshop_id","id"]
+    }
+                  ]
+                },"job_inspections": {
+                  Row: {
+                    "completed_at": string | null,"completed_by": string | null,"id": string,"job_card_id": string,"started_at": string,"started_by": string | null,"summary": string | null,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "completed_at"?: string | null,"completed_by"?: string | null,"id"?: string,"job_card_id": string,"started_at"?: string,"started_by"?: string | null,"summary"?: string | null,"workshop_id": string
+                  }
+                  Update: {
+                    "completed_at"?: string | null,"completed_by"?: string | null,"id"?: string,"job_card_id"?: string,"started_at"?: string,"started_by"?: string | null,"summary"?: string | null,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "job_inspections_completed_by_fkey"
+      columns: ["completed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "job_inspections_started_by_fkey"
+      columns: ["started_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "job_inspections_workshop_id_job_card_id_fkey"
+      columns: ["workshop_id","job_card_id"]
+isOneToOne: false
+      referencedRelation: "job_cards"
+      referencedColumns: ["workshop_id","id"]
+    }
+                  ]
                 },"job_notes": {
                   Row: {
                     "body": string,"created_at": string,"created_by": string | null,"id": string,"job_card_id": string,"visibility": string,"workshop_id": string
@@ -197,6 +345,72 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "job_cards"
       referencedColumns: ["workshop_id","id"]
+    }
+                  ]
+                },"labour_items": {
+                  Row: {
+                    "created_at": string,"default_price": number,"description": string | null,"estimated_minutes": number | null,"id": string,"is_active": boolean,"name": string,"updated_at": string,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"default_price"?: number,"description"?: string | null,"estimated_minutes"?: number | null,"id"?: string,"is_active"?: boolean,"name": string,"updated_at"?: string,"workshop_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"default_price"?: number,"description"?: string | null,"estimated_minutes"?: number | null,"id"?: string,"is_active"?: boolean,"name"?: string,"updated_at"?: string,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "labour_items_workshop_id_fkey"
+      columns: ["workshop_id"]
+isOneToOne: false
+      referencedRelation: "workshops"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "body": string | null,"created_at": string,"id": string,"kind": string,"link": string | null,"read_at": string | null,"recipient_id": string,"title": string,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"link"?: string | null,"read_at"?: string | null,"recipient_id": string,"title": string,"workshop_id": string
+                  }
+                  Update: {
+                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"link"?: string | null,"read_at"?: string | null,"recipient_id"?: string,"title"?: string,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_workshop_id_fkey"
+      columns: ["workshop_id"]
+isOneToOne: false
+      referencedRelation: "workshops"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"parts": {
+                  Row: {
+                    "brand": string | null,"category": string | null,"cost_price": number | null,"created_at": string,"id": string,"is_active": boolean,"name": string,"part_number": string | null,"selling_price": number,"supplier": string | null,"unit": string,"updated_at": string,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand"?: string | null,"category"?: string | null,"cost_price"?: number | null,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name": string,"part_number"?: string | null,"selling_price"?: number,"supplier"?: string | null,"unit"?: string,"updated_at"?: string,"workshop_id": string
+                  }
+                  Update: {
+                    "brand"?: string | null,"category"?: string | null,"cost_price"?: number | null,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"part_number"?: string | null,"selling_price"?: number,"supplier"?: string | null,"unit"?: string,"updated_at"?: string,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "parts_workshop_id_fkey"
+      columns: ["workshop_id"]
+isOneToOne: false
+      referencedRelation: "workshops"
+      referencedColumns: ["id"]
     }
                   ]
                 },"profiles": {
@@ -392,11 +606,20 @@ isOneToOne: false
             "accept_invitation":
 { Args: { "p_token": string }; Returns: string
                            },
+"apply_estimate_decision":
+{ Args: { "p_approved": (string)[],"p_customer_name": string,"p_estimate": string,"p_method": Database["public"]['Enums']["decision_method"],"p_note": string,"p_recorded_by": string }; Returns: Database["public"]['Enums']["estimate_status"]
+                           },
 "can_upload_job_attachment":
 { Args: { "object_name": string }; Returns: boolean
                            },
 "change_job_status":
 { Args: { "p_action": string,"p_expected_status": Database["public"]['Enums']["job_status"],"p_job": string,"p_reason"?: string }; Returns: Database["public"]['Enums']["job_status"]
+                           },
+"complete_inspection":
+{ Args: { "p_job": string,"p_summary"?: string }; Returns: undefined
+                           },
+"create_estimate":
+{ Args: { "p_job": string,"p_reason"?: string }; Returns: string
                            },
 "create_invitation":
 { Args: { "p_email": string,"p_role": Database["public"]['Enums']["workshop_role"],"ws": string }; Returns: string
@@ -406,6 +629,9 @@ isOneToOne: false
                            },
 "create_workshop":
 { Args: { "p_address"?: string,"p_city"?: string,"p_country"?: string,"p_currency"?: string,"p_email"?: string,"p_invoice_prefix"?: string,"p_job_card_prefix"?: string,"p_name": string,"p_phone"?: string,"p_tax_label"?: string,"p_tax_rate"?: number,"p_timezone"?: string }; Returns: string
+                           },
+"get_estimate_for_customer":
+{ Args: { "p_token": string }; Returns: Json
                            },
 "get_invitation":
 { Args: { "p_token": string }; Returns: {
@@ -447,6 +673,21 @@ isOneToOne: false
 "normalize_registration":
 { Args: { "p": string }; Returns: string
                            },
+"notify_job_staff":
+{ Args: { "p_body": string,"p_job": string,"p_kind": string,"p_title": string }; Returns: undefined
+                           },
+"recalculate_estimate":
+{ Args: { "p_estimate": string }; Returns: undefined
+                           },
+"record_estimate_decision":
+{ Args: { "p_approved": (string)[],"p_estimate": string,"p_method": Database["public"]['Enums']["decision_method"],"p_note"?: string }; Returns: Database["public"]['Enums']["estimate_status"]
+                           },
+"renew_estimate_link":
+{ Args: { "p_estimate": string,"p_valid_days"?: number }; Returns: string
+                           },
+"respond_to_estimate":
+{ Args: { "p_approved": (string)[],"p_customer_name": string,"p_token": string }; Returns: Database["public"]['Enums']["estimate_status"]
+                           },
 "search_customers":
 { Args: { "include_archived"?: boolean,"p_limit"?: number,"p_offset"?: number,"q"?: string,"ws": string }; Returns: {
               "archived_at": string,"code": string,"created_at": string,"email": string,"id": string,"job_count": number,"last_visit": string,"name": string,"phone": string,"total_count": number,"vehicle_count": number,"whatsapp": string
@@ -462,15 +703,21 @@ isOneToOne: false
               "archived_at": string,"colour": string,"created_at": string,"current_mileage": number,"customer_id": string,"customer_name": string,"customer_phone": string,"id": string,"make": string,"model": string,"registration_number": string,"total_count": number,"variant": string,"year": number
             }[]
                            },
+"send_estimate":
+{ Args: { "p_estimate": string,"p_valid_days"?: number }; Returns: string
+                           },
 "shares_workshop_with":
 { Args: { "other": string }; Returns: boolean
+                           },
+"start_inspection":
+{ Args: { "p_job": string }; Returns: string
                            },
 "try_uuid":
 { Args: { "p": string }; Returns: string
                            }
           }
           Enums: {
-            "fuel_level": "empty"|"quarter"|"half"|"three_quarters"|"full","fuel_type": "petrol"|"diesel"|"cng"|"lpg"|"hybrid"|"electric"|"other","job_status": "draft"|"awaiting_inspection"|"awaiting_estimate"|"awaiting_approval"|"approved"|"awaiting_assignment"|"in_progress"|"on_hold"|"quality_check"|"ready_for_delivery"|"delivered"|"cancelled","transmission_type": "manual"|"automatic"|"other","workshop_role": "owner"|"advisor"|"mechanic"|"inventory_manager"|"cashier"
+            "approval_status": "pending"|"approved"|"declined","decision_method": "link"|"in_person"|"phone"|"whatsapp","estimate_item_kind": "labour"|"part"|"other","estimate_item_source": "customer_request"|"recommendation","estimate_status": "draft"|"sent"|"approved"|"partially_approved"|"rejected"|"withdrawn"|"superseded","fuel_level": "empty"|"quarter"|"half"|"three_quarters"|"full","fuel_type": "petrol"|"diesel"|"cng"|"lpg"|"hybrid"|"electric"|"other","inspection_category": "engine"|"transmission"|"brakes"|"suspension"|"steering"|"electrical"|"battery"|"tyres"|"cooling"|"air_conditioning"|"fluids"|"exterior"|"interior","inspection_outcome": "normal"|"needs_attention"|"requires_repair"|"not_inspected","job_status": "draft"|"awaiting_inspection"|"awaiting_estimate"|"awaiting_approval"|"approved"|"awaiting_assignment"|"in_progress"|"on_hold"|"quality_check"|"ready_for_delivery"|"delivered"|"cancelled","transmission_type": "manual"|"automatic"|"other","workshop_role": "owner"|"advisor"|"mechanic"|"inventory_manager"|"cashier"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -586,7 +833,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "fuel_level": ["empty", "quarter", "half", "three_quarters", "full"],"fuel_type": ["petrol", "diesel", "cng", "lpg", "hybrid", "electric", "other"],"job_status": ["draft", "awaiting_inspection", "awaiting_estimate", "awaiting_approval", "approved", "awaiting_assignment", "in_progress", "on_hold", "quality_check", "ready_for_delivery", "delivered", "cancelled"],"transmission_type": ["manual", "automatic", "other"],"workshop_role": ["owner", "advisor", "mechanic", "inventory_manager", "cashier"]
+            "approval_status": ["pending", "approved", "declined"],"decision_method": ["link", "in_person", "phone", "whatsapp"],"estimate_item_kind": ["labour", "part", "other"],"estimate_item_source": ["customer_request", "recommendation"],"estimate_status": ["draft", "sent", "approved", "partially_approved", "rejected", "withdrawn", "superseded"],"fuel_level": ["empty", "quarter", "half", "three_quarters", "full"],"fuel_type": ["petrol", "diesel", "cng", "lpg", "hybrid", "electric", "other"],"inspection_category": ["engine", "transmission", "brakes", "suspension", "steering", "electrical", "battery", "tyres", "cooling", "air_conditioning", "fluids", "exterior", "interior"],"inspection_outcome": ["normal", "needs_attention", "requires_repair", "not_inspected"],"job_status": ["draft", "awaiting_inspection", "awaiting_estimate", "awaiting_approval", "approved", "awaiting_assignment", "in_progress", "on_hold", "quality_check", "ready_for_delivery", "delivered", "cancelled"],"transmission_type": ["manual", "automatic", "other"],"workshop_role": ["owner", "advisor", "mechanic", "inventory_manager", "cashier"]
           }
         }
 } as const

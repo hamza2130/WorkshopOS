@@ -1,0 +1,36 @@
+---
+title: Estimate versions — a revision always needs fresh approval
+---
+stateDiagram-v2
+  state "Draft (editable)" as draft
+  state "Sent — waiting for customer" as sent
+  state "Approved" as approved
+  state "Partly approved" as partial
+  state "Declined" as rejected
+  state "Withdrawn" as withdrawn
+  state "Superseded" as superseded
+
+  [*] --> draft: Start estimate (version 1)
+  draft --> sent: Send — version is frozen, link issued
+  sent --> approved: Customer approves every line
+  sent --> partial: Customer approves some lines
+  sent --> rejected: Customer declines everything
+  sent --> withdrawn: Revision started before the customer decided — link dies
+  approved --> superseded: Newer version sent — link dies
+  partial --> superseded: Newer version sent
+  rejected --> superseded: Newer version sent
+  withdrawn --> [*]
+  superseded --> [*]
+
+  note right of draft
+    A revision is a new version (N + 1).
+    It copies the latest lines with every
+    line back to "pending". Approvals from
+    earlier versions never carry over.
+  end note
+  note left of sent
+    Prices, lines and terms can't change
+    once sent — the database refuses it.
+    One link per version; a new link
+    replaces the old one.
+  end note

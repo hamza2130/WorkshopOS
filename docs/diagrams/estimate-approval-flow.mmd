@@ -1,0 +1,33 @@
+---
+title: Estimate to customer approval — no login for the customer
+---
+sequenceDiagram
+  autonumber
+  actor Advisor
+  participant App as Next.js app
+  participant DB as Postgres
+  actor Customer
+
+  Advisor->>App: Complete inspection
+  App->>DB: rpc complete_inspection() → job: Awaiting estimate
+  Advisor->>App: Start estimate, add lines (catalogue, custom, inspection findings)
+  App->>DB: rpc create_estimate() · insert estimate_items
+  Note over DB: Totals, discounts and tax are computed by the database
+  Advisor->>App: Send to customer
+  App->>DB: rpc send_estimate()
+  Note over DB: Version frozen · random token, only its SHA-256 hash stored ·<br/>older versions superseded (their links die) · job: Awaiting approval
+  DB-->>App: Raw token (returned once)
+  App-->>Advisor: Link + "Send on WhatsApp" to the customer's number
+  Advisor-->>Customer: WhatsApp message with the link
+  Customer->>App: Opens /approve/<token> (phone, no login)
+  App->>DB: rpc get_estimate_for_customer(token)
+  DB-->>App: Workshop, vehicle, findings, lines, totals<br/>(no phone, address, cost prices or internal notes)
+  Customer->>App: Ticks lines, enters name, Approve / Decline all
+  App->>DB: rpc respond_to_estimate(token, approved lines, name)
+  Note over DB: Link valid, not expired, not used · each line approved or declined ·<br/>decision recorded · job: Approved (or back to Awaiting estimate if all declined) ·<br/>advisor and owners notified
+  App-->>Customer: Thank-you with the approved amount
+
+  alt Customer decides in person, by phone or on WhatsApp
+    Advisor->>App: Record the customer's decision
+    App->>DB: rpc record_estimate_decision() — same rules, recorded under the advisor's name
+  end

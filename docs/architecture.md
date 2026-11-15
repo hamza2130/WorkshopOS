@@ -46,7 +46,13 @@ so there is no server cache that could serve one workshop's data to another.
 - **Column grants are deny-by-default.** Clients can't write `workshop_id` on update, customer codes, job
   numbers or job status.
 - **Sensitive writes go through checked functions** (`SECURITY DEFINER`, explicit permission checks):
-  `create_workshop`, `create_invitation`, `accept_invitation`, `create_job_card`, `change_job_status`.
+  `create_workshop`, `create_invitation`, `accept_invitation`, `create_job_card`, `change_job_status`,
+  `start_inspection`, `complete_inspection`, `create_estimate`, `send_estimate`, `record_estimate_decision`.
+- **Public, token-based functions** (no login): `get_invitation`, `get_estimate_for_customer`,
+  `respond_to_estimate`. Tokens are 256-bit random; only SHA-256 hashes are stored; each returns the
+  minimum data the page needs.
+- **System-driven status moves**: inspection, estimate and approval functions move the job themselves;
+  those moves carry the permission `system`, which no one holds, so no button can fake them.
 - **Guard triggers** enforce business rules for every client: duplicate phones and plates, the last
   active owner, mileage that goes backwards, edits to closed job cards, and job status history.
 - The active workshop is chosen by an `active_workshop` cookie, but membership is re-verified on every
@@ -96,3 +102,4 @@ that proves it:
 | 1 | Row-level security verified across two workshops | `tests/rls/tenant-isolation.test.ts` |
 | 2 | A duplicate phone number is caught before save | `tests/rls/customers-vehicles.test.ts` |
 | 3 | Every status change is timestamped | `tests/rls/job-cards.test.ts` |
+| 4 | A revised estimate needs fresh approval | `tests/rls/estimates.test.ts` |

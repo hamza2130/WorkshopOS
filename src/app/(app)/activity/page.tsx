@@ -19,6 +19,8 @@ type Meta = {
   fields?: string[];
   reason?: string;
   file_name?: string;
+  version?: number;
+  decision?: string;
 };
 
 const statusLabel = (s?: string) => (s && isJobStatus(s) ? JOB_STATUS_LABELS[s] : s ?? "?");
@@ -44,7 +46,7 @@ function record(kind: "customers" | "vehicles" | "jobs", id: string | null | und
 
 const roleLabel = (r?: string) => (r && r in ROLE_LABELS ? ROLE_LABELS[r as Role] : "a member");
 
-function describe(action: string, entityId: string | null, meta: Meta, names: Names): ReactNode {
+function describe(action: string, entityId: string | null, meta: Meta, names: Names, byCustomer: boolean): ReactNode {
   const subject = (meta.user_id && names.people.get(meta.user_id)) || "a member";
   const fields = meta.fields?.map((f) => f.replaceAll("_", " ")).join(", ");
   switch (action) {
@@ -104,6 +106,37 @@ function describe(action: string, entityId: string | null, meta: Meta, names: Na
       );
     case "job_card.attachment_removed":
       return <>removed {meta.file_name} from {record("jobs", entityId, names)}</>;
+    case "inspection.completed":
+      return <>completed the inspection on {record("jobs", entityId, names)}</>;
+    case "estimate.created":
+      return (
+        <>
+          started estimate version {meta.version} for {record("jobs", entityId, names)}
+          {meta.reason ? ` — “${meta.reason}”` : ""}
+        </>
+      );
+    case "estimate.sent":
+      return <>sent estimate version {meta.version} for {record("jobs", entityId, names)} to the customer</>;
+    case "estimate.link_renewed":
+      return <>issued a new approval link for {record("jobs", entityId, names)}</>;
+    case "estimate.decided": {
+      const outcome = meta.decision === "approved" ? "approved" : meta.decision === "rejected" ? "declined" : "partly approved";
+      return byCustomer ? (
+        <>
+          responded to estimate version {meta.version} for {record("jobs", entityId, names)}: {outcome}
+        </>
+      ) : (
+        <>
+          recorded the customer&apos;s decision on {record("jobs", entityId, names)} (version {meta.version}: {outcome})
+        </>
+      );
+    }
+    case "labour_item.created":
+    case "part.created":
+      return <>added a {action.startsWith("part") ? "part" : "labour service"} to the catalogue</>;
+    case "labour_item.updated":
+    case "part.updated":
+      return <>updated a catalogue {action.startsWith("part") ? "part" : "service"}{fields ? ` (${fields})` : ""}</>;
     default:
       return action;
   }
@@ -152,8 +185,10 @@ export default async function ActivityPage() {
             {data.map((e) => (
               <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-2 px-6 py-3 text-sm">
                 <p className="text-slate-800">
-                  <span className="font-medium text-slate-900">{e.actor?.full_name || e.actor?.email || "System"}</span>{" "}
-                  {describe(e.action, e.entity_id, e.metadata as Meta, names)}
+                  <span className="font-medium text-slate-900">
+                    {e.actor?.full_name || e.actor?.email || (e.action === "estimate.decided" ? "Customer" : "System")}
+                  </span>{" "}
+                  {describe(e.action, e.entity_id, e.metadata as Meta, names, !e.actor)}
                 </p>
                 <time dateTime={e.created_at} className="text-xs text-slate-500">
                   {formatDateTime(e.created_at, ctx.workshop.timezone)}

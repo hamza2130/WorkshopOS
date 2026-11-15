@@ -1,6 +1,6 @@
 # 05 · Activity log
 
-**Phases 1–3 · Built**
+**Phases 1–4 · Built**
 
 ## What it does
 
@@ -21,6 +21,8 @@ Users with `activity.view` — owners and service advisors. Reached from **Emplo
 | Customers | created, updated (with field names), archived, restored, shared phone confirmed |
 | Vehicles | created, updated, archived, restored, transferred (from → to owner), duplicate plate allowed (with reason) |
 | Job cards | opened, details updated, status changed (from → to, with reason), attachment removed |
+| Inspections and estimates | inspection completed; estimate version started (with revision reason), sent, new link issued, decided (shown as "Customer responded…" when it came from the link) |
+| Catalogue | labour service or part added or updated |
 
 Job status changes also have their own, more detailed timeline on each job card
 (see [job cards](08-job-cards.md)).

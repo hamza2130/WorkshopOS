@@ -3,6 +3,8 @@ import { z } from "zod";
 export type ActionState = {
   error?: string;
   success?: string;
+  /** Changes on every success, so a form can re-mount (reset) after saving. */
+  nonce?: number;
   fieldErrors?: Record<string, string[] | undefined>;
   values?: Record<string, string>;
 };

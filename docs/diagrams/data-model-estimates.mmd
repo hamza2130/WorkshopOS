@@ -1,0 +1,81 @@
+---
+title: Phase 4 data — inspections, catalogue, estimates, decisions, notifications
+---
+erDiagram
+  job_cards ||--o| job_inspections : "inspected in"
+  job_inspections ||--|{ job_inspection_items : "13 categories"
+  job_cards ||--o{ estimates : "versions 1..n"
+  estimates ||--|{ estimate_items : "lines"
+  estimates ||--o{ estimate_decisions : "customer decisions"
+  labour_items |o--o{ estimate_items : "picked from"
+  parts |o--o{ estimate_items : "picked from"
+  job_cards ||--o{ notifications : "about"
+  profiles ||--o{ notifications : "receives"
+
+  job_cards {
+    uuid id PK
+    enum status
+  }
+  job_inspections {
+    uuid job_card_id FK "one per job"
+    timestamptz completed_at "locks the items"
+    text summary
+  }
+  job_inspection_items {
+    enum category "engine … interior"
+    enum outcome "normal needs_attention requires_repair not_inspected"
+    text notes
+    uuid updated_by FK
+  }
+  labour_items {
+    text name "unique per workshop"
+    numeric default_price
+    int estimated_minutes
+    bool is_active
+  }
+  parts {
+    text name
+    text part_number
+    numeric selling_price
+    numeric cost_price "staff only"
+    text unit
+    bool is_active
+  }
+  estimates {
+    uuid job_card_id FK
+    int version "unique per job"
+    enum status "draft sent approved partially_approved rejected withdrawn superseded"
+    numeric tax_rate "snapshot"
+    numeric subtotal "computed"
+    numeric total "computed"
+    text approval_token_hash "SHA-256 only"
+    timestamptz approval_expires_at
+  }
+  estimate_items {
+    enum kind "labour part other"
+    enum source "customer_request recommendation"
+    enum inspection_category
+    numeric quantity
+    numeric unit_price
+    numeric discount
+    numeric line_total "generated"
+    enum approval_status "pending approved declined"
+  }
+  estimate_decisions {
+    int version
+    enum decision
+    uuid_array approved_item_ids
+    numeric approved_total
+    enum method "link in_person phone whatsapp"
+    text customer_name
+    uuid recorded_by FK "staff, if not the link"
+  }
+  notifications {
+    uuid recipient_id FK
+    text title
+    text link
+    timestamptz read_at
+  }
+  profiles {
+    uuid id PK
+  }
