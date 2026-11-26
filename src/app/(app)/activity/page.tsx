@@ -9,6 +9,7 @@ import { isJobStatus, JOB_STATUS_LABELS } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 import { TASK_STATUS_LABELS, type TaskStatus } from "@/lib/tasks";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/invoices";
+import { formatQty } from "@/lib/inventory";
 import { formatMoney } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Activity" };
@@ -33,6 +34,11 @@ type Meta = {
   total?: number;
   amount?: number;
   method?: string;
+  name?: string;
+  unit?: string;
+  counted?: number;
+  change?: number;
+  supplier?: string | null;
 };
 
 const statusLabel = (s?: string) => (s && isJobStatus(s) ? JOB_STATUS_LABELS[s] : s ?? "?");
@@ -44,16 +50,19 @@ type Names = {
   vehicles: Map<string, string>;
   jobs: Map<string, string>;
   invoices: Map<string, string>;
+  parts: Map<string, string>;
   currency: string;
 };
 
-const FALLBACK = { customers: "a customer", vehicles: "a vehicle", jobs: "a job card", invoices: "an invoice" };
+const FALLBACK = { customers: "a customer", vehicles: "a vehicle", jobs: "a job card", invoices: "an invoice", parts: "a part" };
+// Parts are shown on their stock page.
+const PATHS = { customers: "/customers", vehicles: "/vehicles", jobs: "/jobs", invoices: "/invoices", parts: "/inventory" };
 
-function record(kind: "customers" | "vehicles" | "jobs" | "invoices", id: string | null | undefined, names: Names): ReactNode {
+function record(kind: keyof typeof FALLBACK, id: string | null | undefined, names: Names): ReactNode {
   if (!id) return "a record";
   const label = names[kind].get(id) ?? FALLBACK[kind];
   return (
-    <Link href={`/${kind}/${id}`} className="font-medium text-brand-700 hover:underline">
+    <Link href={`${PATHS[kind]}/${id}`} className="font-medium text-brand-700 hover:underline">
       {label}
     </Link>
   );
@@ -212,12 +221,29 @@ function describe(action: string, entityId: string | null, meta: Meta, names: Na
           {meta.reason ? ` — “${meta.reason}”` : ""}
         </>
       );
-    case "labour_item.created":
+    case "stock.received":
+      return (
+        <>
+          received {formatQty(meta.quantity)} {meta.unit} of {record("parts", entityId, names)}
+          {meta.supplier ? ` from ${meta.supplier}` : ""}
+        </>
+      );
+    case "stock.counted":
+      return (
+        <>
+          counted {record("parts", entityId, names)}: {formatQty(meta.counted)} {meta.unit}
+          {meta.change ? ` (${Number(meta.change) > 0 ? "+" : ""}${formatQty(meta.change)})` : " (matched)"}
+          {meta.reason ? ` — “${meta.reason}”` : ""}
+        </>
+      );
     case "part.created":
-      return <>added a {action.startsWith("part") ? "part" : "labour service"} to the catalogue</>;
-    case "labour_item.updated":
+      return <>added {record("parts", entityId, names)} to the parts catalogue</>;
     case "part.updated":
-      return <>updated a catalogue {action.startsWith("part") ? "part" : "service"}{fields ? ` (${fields})` : ""}</>;
+      return <>updated part {record("parts", entityId, names)}{fields ? ` (${fields})` : ""}</>;
+    case "labour_item.created":
+      return <>added a labour service to the catalogue</>;
+    case "labour_item.updated":
+      return <>updated a catalogue service{fields ? ` (${fields})` : ""}</>;
     default:
       return action;
   }
@@ -242,13 +268,15 @@ export default async function ActivityPage() {
   const vehicleIds = ids((e) => (e.entity_type === "vehicle" ? [e.entity_id] : []));
   const jobIds = ids((e) => (e.entity_type === "job_card" ? [e.entity_id] : []));
   const invoiceIds = ids((e) => (e.entity_type === "invoice" ? [e.entity_id] : []));
+  const partIds = ids((e) => (e.entity_type === "part" ? [e.entity_id] : []));
 
-  const [people, customers, vehicles, jobs, invoices] = await Promise.all([
+  const [people, customers, vehicles, jobs, invoices, parts] = await Promise.all([
     personIds.length ? supabase.from("profiles").select("id, full_name, email").in("id", personIds) : { data: [] },
     customerIds.length ? supabase.from("customers").select("id, name").in("id", customerIds) : { data: [] },
     vehicleIds.length ? supabase.from("vehicles").select("id, registration_number").in("id", vehicleIds) : { data: [] },
     jobIds.length ? supabase.from("job_cards").select("id, job_number").in("id", jobIds) : { data: [] },
     invoiceIds.length ? supabase.from("invoices").select("id, invoice_number").in("id", invoiceIds) : { data: [] },
+    partIds.length ? supabase.from("parts").select("id, name").in("id", partIds) : { data: [] },
   ]);
   const names: Names = {
     people: new Map((people.data ?? []).map((p) => [p.id, p.full_name || p.email])),
@@ -256,6 +284,7 @@ export default async function ActivityPage() {
     vehicles: new Map((vehicles.data ?? []).map((v) => [v.id, v.registration_number])),
     jobs: new Map((jobs.data ?? []).map((j) => [j.id, j.job_number])),
     invoices: new Map((invoices.data ?? []).map((i) => [i.id, i.invoice_number ?? "a draft invoice"])),
+    parts: new Map((parts.data ?? []).map((p) => [p.id, p.name])),
     currency: ctx.workshop.currency,
   };
 

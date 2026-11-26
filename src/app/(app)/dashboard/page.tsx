@@ -6,6 +6,7 @@ import type { Permission } from "@/lib/auth/permissions";
 import { getWorkshopContext } from "@/lib/auth/session";
 import { utcToZonedLocal, zonedLocalToUtc } from "@/lib/datetime";
 import { IN_WORKSHOP, JOB_STATUS_LABELS, type JobStatus } from "@/lib/job-status";
+import { formatQty } from "@/lib/inventory";
 import { formatMoney } from "@/lib/money";
 import { getRequestTime } from "@/lib/request-time";
 import { createClient } from "@/lib/supabase/server";
@@ -33,13 +34,14 @@ export default async function DashboardPage() {
   const isOwner = ctx.workshop.role === "owner";
   const canJobs = ctx.permissions.has("jobs.manage");
   const canBilling = ["invoices.manage", "payments.record", "reports.financial"].some((p) => ctx.permissions.has(p as Permission));
+  const canStock = ctx.permissions.has("inventory.manage");
   const wsId = ctx.workshop.workshopId;
   // "Today" in the workshop's time zone, not the server's.
   const today = utcToZonedLocal(new Date(getRequestTime()), ctx.workshop.timezone).slice(0, 10);
   const dayStart = zonedLocalToUtc(`${today}T00:00`, ctx.workshop.timezone)!;
   const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000);
 
-  const [members, invites, settingsSaved, counts, billing] = await Promise.all([
+  const [members, invites, settingsSaved, counts, billing, lowStock, outOfStock] = await Promise.all([
     supabase.from("workshop_members").select("id", { count: "exact", head: true }).eq("workshop_id", wsId).eq("is_active", true),
     isOwner
       ? supabase
@@ -57,7 +59,22 @@ export default async function DashboardPage() {
     canBilling
       ? supabase.rpc("billing_summary", { ws: wsId, p_from: dayStart.toISOString(), p_to: dayEnd.toISOString() })
       : Promise.resolve({ data: [] }),
+    canStock ? supabase.rpc("low_stock_parts", { ws: wsId }) : Promise.resolve({ data: [] }),
+    // Parts with no reorder level still count once they run out.
+    canStock
+      ? supabase
+          .from("parts")
+          .select("id, name, part_number, unit, stock_on_hand, reorder_level")
+          .eq("workshop_id", wsId)
+          .eq("is_active", true)
+          .eq("track_stock", true)
+          .lte("stock_on_hand", 0)
+          .limit(50)
+      : Promise.resolve({ data: [] }),
   ]);
+  const shortParts = [...new Map([...(lowStock.data ?? []), ...(outOfStock.data ?? [])].map((p) => [p.id, p])).values()].sort(
+    (a, b) => Number(a.stock_on_hand) - Number(b.stock_on_hand),
+  );
   const b = billing.data?.[0];
   const cur = ctx.workshop.currency;
   const teamSize = members.count ?? 1;
@@ -196,17 +213,40 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
-      {!canJobs && !canBilling ? (
+      {!canJobs && !canBilling && !canStock ? (
         <Card className="mb-6 p-6">
           <h2 className="text-base font-semibold text-slate-900">You&apos;re all set</h2>
           <p className="mt-1 text-sm text-slate-600">Your work will appear here as the modules for your role are switched on.</p>
         </Card>
       ) : null}
 
-      <Card className="p-6">
-        <h2 className="text-base font-semibold text-slate-900">Coming next</h2>
-        <p className="mt-1 text-sm text-slate-600">Low-stock alerts will appear here when inventory ships.</p>
-      </Card>
+      {canStock ? (
+        <Card className="mb-6 p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-base font-semibold text-slate-900">Stock to reorder</h2>
+            <Link href="/inventory?view=low" className="text-sm text-brand-700 hover:underline">
+              {shortParts.length ? `${shortParts.length} part${shortParts.length === 1 ? "" : "s"} · open list` : "Inventory"}
+            </Link>
+          </div>
+          {shortParts.length ? (
+            <ul className="mt-3 divide-y divide-slate-100">
+              {shortParts.slice(0, 6).map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <Link href={`/inventory/${p.id}`} className="font-medium text-slate-900 hover:text-brand-700 hover:underline">
+                    {p.name}
+                  </Link>
+                  <span className={`tabular-nums ${Number(p.stock_on_hand) <= 0 ? "font-medium text-red-700" : "text-amber-800"}`}>
+                    {formatQty(p.stock_on_hand)} {p.unit} left
+                    {p.reorder_level != null ? ` · reorder at ${formatQty(p.reorder_level)}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-slate-600">Nothing is low. Set reorder levels on parts to be warned before they run out.</p>
+          )}
+        </Card>
+      ) : null}
     </>
   );
 }

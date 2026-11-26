@@ -1,0 +1,37 @@
+---
+title: Phase 7 data — parts and the stock ledger
+---
+erDiagram
+  parts ||--o{ stock_movements : "ledger"
+  job_cards |o--o{ stock_movements : "used on / back from"
+  job_parts_used |o--o{ stock_movements : "caused by"
+  parts |o--o{ job_parts_used : "catalogue part"
+  parts |o--o{ estimate_items : "quoted as"
+  parts |o--o{ invoice_items : "billed as"
+
+  parts {
+    uuid id PK
+    text name
+    text unit
+    numeric cost_price "latest receipt cost"
+    numeric selling_price
+    boolean track_stock "default true"
+    numeric stock_on_hand "written only by apply_stock_movement()"
+    numeric reorder_level "warn at or below"
+    text location "shelf / bin"
+  }
+  stock_movements {
+    bigint id PK
+    uuid part_id FK
+    stock_movement_kind kind "receipt | consumption | return | adjustment"
+    numeric quantity "signed: + in, - out"
+    numeric balance_after
+    numeric unit_cost "receipts"
+    text supplier
+    text reference "supplier bill no."
+    text reason "required for adjustments"
+    uuid job_card_id FK
+    uuid part_used_id FK
+    uuid created_by FK
+    timestamptz created_at
+  }

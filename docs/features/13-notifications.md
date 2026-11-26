@@ -1,11 +1,11 @@
 # 13 · In-app notifications
 
-**Phases 4–6 · Built**
+**Phases 4–7 · Built**
 
 ## What it does
 
 Tells staff when something needs their attention without them watching the screen. For now: a
-customer's decision on an estimate, new work for a mechanic, a blocked task, all tasks finished, and an invoice paid in full. The bell in the header shows the unread count; the list is at
+customer's decision on an estimate, new work for a mechanic, a blocked task, all tasks finished, an invoice paid in full, and a part falling to its reorder level. The bell in the header shows the unread count; the list is at
 `/notifications`.
 
 ## Who gets what
@@ -18,6 +18,7 @@ customer's decision on an estimate, new work for a mechanic, a blocked task, all
 | A job is cancelled while tasks are open | Each mechanic who still had open work on it (not whoever cancelled it) — with the job's reason |
 | The last open task is completed or cancelled | The job's service advisor and every active owner, except whoever made the change — "ready for quality check" |
 | A payment clears an invoice's balance | The job's service advisor and every active owner, except whoever recorded it — "paid in full", so the car can be handed back |
+| A part's stock falls to or below its reorder level | Owners and inventory managers, except whoever used the part — once per crossing, linking to the part's stock page |
 
 ## How it works
 

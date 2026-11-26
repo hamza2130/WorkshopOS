@@ -1,5 +1,5 @@
 import { Alert, Card } from "@/components/ui";
-import { PartsUsed, type ApprovedPart } from "@/components/tasks/parts-used";
+import { PartsUsed, type ApprovedPart, type StockPart } from "@/components/tasks/parts-used";
 import { NewTaskForm } from "@/components/tasks/task-form";
 import { TaskList } from "@/components/tasks/task-list";
 import type { JobStatus } from "@/lib/job-status";
@@ -16,6 +16,7 @@ export function WorkPanel({
   parts,
   mechanics,
   approvedParts,
+  stockParts,
   untaskedLines,
 }: {
   jobId: string;
@@ -25,6 +26,7 @@ export function WorkPanel({
   parts: PartUsedView[];
   mechanics: StaffOption[];
   approvedParts: ApprovedPart[];
+  stockParts: StockPart[];
   untaskedLines: string[];
 }) {
   const live = tasks.filter((t) => t.status !== "cancelled");
@@ -97,6 +99,7 @@ export function WorkPanel({
           jobId={jobId}
           entries={parts}
           approvedParts={approvedParts}
+          stockParts={stockParts}
           tasks={live.map((t) => ({ id: t.id, title: t.title }))}
           canRecord={canPlan}
           userId={userId}

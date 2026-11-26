@@ -597,14 +597,14 @@ isOneToOne: false
                   ]
                 },"parts": {
                   Row: {
-                    "brand": string | null,"category": string | null,"cost_price": number | null,"created_at": string,"id": string,"is_active": boolean,"name": string,"part_number": string | null,"selling_price": number,"supplier": string | null,"unit": string,"updated_at": string,"workshop_id": string
+                    "brand": string | null,"category": string | null,"cost_price": number | null,"created_at": string,"id": string,"is_active": boolean,"location": string | null,"name": string,"part_number": string | null,"reorder_level": number | null,"selling_price": number,"stock_on_hand": number,"supplier": string | null,"track_stock": boolean,"unit": string,"updated_at": string,"workshop_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "brand"?: string | null,"category"?: string | null,"cost_price"?: number | null,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name": string,"part_number"?: string | null,"selling_price"?: number,"supplier"?: string | null,"unit"?: string,"updated_at"?: string,"workshop_id": string
+                    "brand"?: string | null,"category"?: string | null,"cost_price"?: number | null,"created_at"?: string,"id"?: string,"is_active"?: boolean,"location"?: string | null,"name": string,"part_number"?: string | null,"reorder_level"?: number | null,"selling_price"?: number,"stock_on_hand"?: number,"supplier"?: string | null,"track_stock"?: boolean,"unit"?: string,"updated_at"?: string,"workshop_id": string
                   }
                   Update: {
-                    "brand"?: string | null,"category"?: string | null,"cost_price"?: number | null,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"part_number"?: string | null,"selling_price"?: number,"supplier"?: string | null,"unit"?: string,"updated_at"?: string,"workshop_id"?: string
+                    "brand"?: string | null,"category"?: string | null,"cost_price"?: number | null,"created_at"?: string,"id"?: string,"is_active"?: boolean,"location"?: string | null,"name"?: string,"part_number"?: string | null,"reorder_level"?: number | null,"selling_price"?: number,"stock_on_hand"?: number,"supplier"?: string | null,"track_stock"?: boolean,"unit"?: string,"updated_at"?: string,"workshop_id"?: string
                   }
                   Relationships: [
                     {
@@ -674,6 +674,44 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"stock_movements": {
+                  Row: {
+                    "balance_after": number,"created_at": string,"created_by": string | null,"id": number,"job_card_id": string | null,"kind": Database["public"]['Enums']["stock_movement_kind"],"part_id": string,"part_used_id": string | null,"quantity": number,"reason": string | null,"reference": string | null,"supplier": string | null,"unit_cost": number | null,"workshop_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "balance_after": number,"created_at"?: string,"created_by"?: string | null,"id"?: never,"job_card_id"?: string | null,"kind": Database["public"]['Enums']["stock_movement_kind"],"part_id": string,"part_used_id"?: string | null,"quantity": number,"reason"?: string | null,"reference"?: string | null,"supplier"?: string | null,"unit_cost"?: number | null,"workshop_id": string
+                  }
+                  Update: {
+                    "balance_after"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: never,"job_card_id"?: string | null,"kind"?: Database["public"]['Enums']["stock_movement_kind"],"part_id"?: string,"part_used_id"?: string | null,"quantity"?: number,"reason"?: string | null,"reference"?: string | null,"supplier"?: string | null,"unit_cost"?: number | null,"workshop_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_movements_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_movements_workshop_id_job_card_id_fkey"
+      columns: ["workshop_id","job_card_id"]
+isOneToOne: false
+      referencedRelation: "job_cards"
+      referencedColumns: ["workshop_id","id"]
+    },{
+      foreignKeyName: "stock_movements_workshop_id_part_id_fkey"
+      columns: ["workshop_id","part_id"]
+isOneToOne: false
+      referencedRelation: "parts"
+      referencedColumns: ["workshop_id","id"]
+    },{
+      foreignKeyName: "stock_movements_workshop_id_part_used_id_fkey"
+      columns: ["workshop_id","part_used_id"]
+isOneToOne: false
+      referencedRelation: "job_parts_used"
+      referencedColumns: ["workshop_id","id"]
+    }
                   ]
                 },"vehicle_mileage_readings": {
                   Row: {
@@ -843,6 +881,9 @@ isOneToOne: false
 "apply_estimate_decision":
 { Args: { "p_approved": (string)[],"p_customer_name": string,"p_estimate": string,"p_method": Database["public"]['Enums']["decision_method"],"p_note": string,"p_recorded_by": string }; Returns: Database["public"]['Enums']["estimate_status"]
                            },
+"apply_stock_movement":
+{ Args: { "p_job"?: string,"p_kind": Database["public"]['Enums']["stock_movement_kind"],"p_part": string,"p_part_used"?: string,"p_quantity": number,"p_reason"?: string,"p_reference"?: string,"p_supplier"?: string,"p_unit_cost"?: number }; Returns: number
+                           },
 "billing_summary":
 { Args: { "p_from": string,"p_to": string,"ws": string }; Returns: {
               "collected": number,"invoice_count": number,"invoiced": number,"outstanding": number,"unpaid_count": number
@@ -859,6 +900,9 @@ isOneToOne: false
                            },
 "complete_inspection":
 { Args: { "p_job": string,"p_summary"?: string }; Returns: undefined
+                           },
+"count_stock":
+{ Args: { "p_counted": number,"p_part": string,"p_reason": string }; Returns: number
                            },
 "create_estimate":
 { Args: { "p_job": string,"p_reason"?: string }; Returns: string
@@ -921,6 +965,11 @@ isOneToOne: false
 "looks_like_phone":
 { Args: { "q": string }; Returns: boolean
                            },
+"low_stock_parts":
+{ Args: { "ws": string }; Returns: {
+              "id": string,"name": string,"part_number": string,"reorder_level": number,"stock_on_hand": number,"unit": string
+            }[]
+                           },
 "member_has_permission":
 { Args: { "p_user": string,"perm": string,"ws": string }; Returns: boolean
                            },
@@ -941,11 +990,17 @@ isOneToOne: false
 "notify_job_staff":
 { Args: { "p_body": string,"p_job": string,"p_kind": string,"p_title": string }; Returns: undefined
                            },
+"notify_low_stock":
+{ Args: { "p_balance": number,"p_part": Omit<Database["public"]['Tables']["parts"]['Row'], Database["public"]['Tables']["parts"]['ComputedFields']> }; Returns: undefined
+                           },
 "recalculate_estimate":
 { Args: { "p_estimate": string }; Returns: undefined
                            },
 "recalculate_invoice":
 { Args: { "p_invoice": string }; Returns: undefined
+                           },
+"receive_stock":
+{ Args: { "p_part": string,"p_quantity": number,"p_reference"?: string,"p_supplier"?: string,"p_unit_cost"?: number }; Returns: number
                            },
 "record_estimate_decision":
 { Args: { "p_approved": (string)[],"p_estimate": string,"p_method": Database["public"]['Enums']["decision_method"],"p_note"?: string }; Returns: Database["public"]['Enums']["estimate_status"]
@@ -997,7 +1052,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "approval_status": "pending"|"approved"|"declined","decision_method": "link"|"in_person"|"phone"|"whatsapp","estimate_item_kind": "labour"|"part"|"other","estimate_item_source": "customer_request"|"recommendation","estimate_status": "draft"|"sent"|"approved"|"partially_approved"|"rejected"|"withdrawn"|"superseded","fuel_level": "empty"|"quarter"|"half"|"three_quarters"|"full","fuel_type": "petrol"|"diesel"|"cng"|"lpg"|"hybrid"|"electric"|"other","inspection_category": "engine"|"transmission"|"brakes"|"suspension"|"steering"|"electrical"|"battery"|"tyres"|"cooling"|"air_conditioning"|"fluids"|"exterior"|"interior","inspection_outcome": "normal"|"needs_attention"|"requires_repair"|"not_inspected","invoice_line_source": "approved_estimate"|"parts_used"|"added","invoice_status": "draft"|"issued"|"void","job_status": "draft"|"awaiting_inspection"|"awaiting_estimate"|"awaiting_approval"|"approved"|"awaiting_assignment"|"in_progress"|"on_hold"|"quality_check"|"ready_for_delivery"|"delivered"|"cancelled","payment_kind": "payment"|"refund","payment_method": "cash"|"bank_transfer"|"card"|"jazzcash"|"easypaisa"|"cheque"|"other","task_priority": "low"|"normal"|"high"|"urgent","task_status": "pending"|"in_progress"|"blocked"|"completed"|"cancelled","transmission_type": "manual"|"automatic"|"other","workshop_role": "owner"|"advisor"|"mechanic"|"inventory_manager"|"cashier"
+            "approval_status": "pending"|"approved"|"declined","decision_method": "link"|"in_person"|"phone"|"whatsapp","estimate_item_kind": "labour"|"part"|"other","estimate_item_source": "customer_request"|"recommendation","estimate_status": "draft"|"sent"|"approved"|"partially_approved"|"rejected"|"withdrawn"|"superseded","fuel_level": "empty"|"quarter"|"half"|"three_quarters"|"full","fuel_type": "petrol"|"diesel"|"cng"|"lpg"|"hybrid"|"electric"|"other","inspection_category": "engine"|"transmission"|"brakes"|"suspension"|"steering"|"electrical"|"battery"|"tyres"|"cooling"|"air_conditioning"|"fluids"|"exterior"|"interior","inspection_outcome": "normal"|"needs_attention"|"requires_repair"|"not_inspected","invoice_line_source": "approved_estimate"|"parts_used"|"added","invoice_status": "draft"|"issued"|"void","job_status": "draft"|"awaiting_inspection"|"awaiting_estimate"|"awaiting_approval"|"approved"|"awaiting_assignment"|"in_progress"|"on_hold"|"quality_check"|"ready_for_delivery"|"delivered"|"cancelled","payment_kind": "payment"|"refund","payment_method": "cash"|"bank_transfer"|"card"|"jazzcash"|"easypaisa"|"cheque"|"other","stock_movement_kind": "receipt"|"consumption"|"return"|"adjustment","task_priority": "low"|"normal"|"high"|"urgent","task_status": "pending"|"in_progress"|"blocked"|"completed"|"cancelled","transmission_type": "manual"|"automatic"|"other","workshop_role": "owner"|"advisor"|"mechanic"|"inventory_manager"|"cashier"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1113,7 +1168,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "approval_status": ["pending", "approved", "declined"],"decision_method": ["link", "in_person", "phone", "whatsapp"],"estimate_item_kind": ["labour", "part", "other"],"estimate_item_source": ["customer_request", "recommendation"],"estimate_status": ["draft", "sent", "approved", "partially_approved", "rejected", "withdrawn", "superseded"],"fuel_level": ["empty", "quarter", "half", "three_quarters", "full"],"fuel_type": ["petrol", "diesel", "cng", "lpg", "hybrid", "electric", "other"],"inspection_category": ["engine", "transmission", "brakes", "suspension", "steering", "electrical", "battery", "tyres", "cooling", "air_conditioning", "fluids", "exterior", "interior"],"inspection_outcome": ["normal", "needs_attention", "requires_repair", "not_inspected"],"invoice_line_source": ["approved_estimate", "parts_used", "added"],"invoice_status": ["draft", "issued", "void"],"job_status": ["draft", "awaiting_inspection", "awaiting_estimate", "awaiting_approval", "approved", "awaiting_assignment", "in_progress", "on_hold", "quality_check", "ready_for_delivery", "delivered", "cancelled"],"payment_kind": ["payment", "refund"],"payment_method": ["cash", "bank_transfer", "card", "jazzcash", "easypaisa", "cheque", "other"],"task_priority": ["low", "normal", "high", "urgent"],"task_status": ["pending", "in_progress", "blocked", "completed", "cancelled"],"transmission_type": ["manual", "automatic", "other"],"workshop_role": ["owner", "advisor", "mechanic", "inventory_manager", "cashier"]
+            "approval_status": ["pending", "approved", "declined"],"decision_method": ["link", "in_person", "phone", "whatsapp"],"estimate_item_kind": ["labour", "part", "other"],"estimate_item_source": ["customer_request", "recommendation"],"estimate_status": ["draft", "sent", "approved", "partially_approved", "rejected", "withdrawn", "superseded"],"fuel_level": ["empty", "quarter", "half", "three_quarters", "full"],"fuel_type": ["petrol", "diesel", "cng", "lpg", "hybrid", "electric", "other"],"inspection_category": ["engine", "transmission", "brakes", "suspension", "steering", "electrical", "battery", "tyres", "cooling", "air_conditioning", "fluids", "exterior", "interior"],"inspection_outcome": ["normal", "needs_attention", "requires_repair", "not_inspected"],"invoice_line_source": ["approved_estimate", "parts_used", "added"],"invoice_status": ["draft", "issued", "void"],"job_status": ["draft", "awaiting_inspection", "awaiting_estimate", "awaiting_approval", "approved", "awaiting_assignment", "in_progress", "on_hold", "quality_check", "ready_for_delivery", "delivered", "cancelled"],"payment_kind": ["payment", "refund"],"payment_method": ["cash", "bank_transfer", "card", "jazzcash", "easypaisa", "cheque", "other"],"stock_movement_kind": ["receipt", "consumption", "return", "adjustment"],"task_priority": ["low", "normal", "high", "urgent"],"task_status": ["pending", "in_progress", "blocked", "completed", "cancelled"],"transmission_type": ["manual", "automatic", "other"],"workshop_role": ["owner", "advisor", "mechanic", "inventory_manager", "cashier"]
           }
         }
 } as const

@@ -1,0 +1,28 @@
+---
+title: Stock only moves through a recorded movement
+---
+flowchart LR
+  subgraph In["Stock in"]
+    Receive["Receive stock<br/>qty, cost, supplier, bill no.<br/>(inventory manager / owner)"]
+    Return["Part taken off a job<br/>(entry removed)"]
+    CountUp["Count: more on the shelf<br/>(reason required)"]
+  end
+  subgraph Out["Stock out"]
+    Use["Part used on a job<br/>(mechanic or advisor)"]
+    CountDown["Count: less on the shelf<br/>(reason required)"]
+  end
+
+  Receive --> Ledger
+  Return --> Ledger
+  CountUp --> Ledger
+  Use --> Ledger
+  CountDown --> Ledger
+
+  Ledger[("stock_movements<br/>append-only ledger<br/>each row keeps the balance after it")] --> OnHand["parts.stock_on_hand<br/>written only by apply_stock_movement()"]
+  OnHand --> Low{"Fell to the<br/>reorder level?"}
+  Low -->|"yes, this time"| Notify["Notify inventory managers<br/>and owners"]
+  OnHand --> Screens["Inventory list · part page<br/>dashboard · parts picker on jobs"]
+
+  Estimate["Estimate approved"] -. "no stock change" .-> OnHand
+  Invoice["Invoice issued"] -. "no stock change" .-> OnHand
+  Typed["Typing a stock figure<br/>(even with the service key)"] -. "refused: stock_direct_edit" .-> OnHand

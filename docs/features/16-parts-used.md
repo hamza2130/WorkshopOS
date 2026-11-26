@@ -1,6 +1,6 @@
 # 16 · Parts used
 
-**Phase 5 · Built (stock deduction in Phase 7)**
+**Phases 5–7 · Built**
 
 ## What it does
 
@@ -54,9 +54,10 @@ line belong to the job, attribution forced to the signed-in user). Only `removed
 `tests/rls/tasks.test.ts` → "lets assigned mechanics add internal notes and parts, nowhere else":
 approved part, free text, wrong job refused, edits refused, removal attributed.
 
-Since Phase 6, parts recorded here that weren't on the approved estimate are offered on the draft
+Since Phase 7, recording a catalogue part here takes it out of stock, and removing the entry puts it
+back — see [inventory](18-inventory.md). Advisors can also pick any stocked catalogue part that wasn't
+on the estimate, and the picker shows how many are in stock. Since Phase 6, parts recorded here that weren't on the approved estimate are offered on the draft
 invoice with a one-tap *Add to invoice* — see [invoices](17-invoices-and-payments.md).
 
 ## Not yet built
 
-- Stock deduction and low-stock alerts (Phase 7).
