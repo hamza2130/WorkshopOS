@@ -1,6 +1,6 @@
 # 09 · Dashboard
 
-**Phases 1–6 · Built (job board, money today); stock tiles come later**
+**Phases 1–7 · Built (job board, money today, stock to reorder)**
 
 ## What it does
 
@@ -35,12 +35,14 @@ same thing**. Since Phase 6, owners and accountants (`invoices.manage`, `payment
 zone), *Collected today* (payments less refunds) and *Outstanding* (every unpaid balance, all dates,
 linking to the unpaid invoices). The three numbers are never added together.
 
+Since Phase 7, owners and inventory managers see **Stock to reorder**: parts at or below their
+reorder level, or at zero or below, worst first, each linking to its stock page.
+
 ## Code
 
 `src/app/(app)/dashboard/page.tsx`.
 
 ## Not yet built
 
-- Low-stock alerts (Phase 7).
 - A "needs attention" list (overdue cars, blocked tasks, old unpaid invoices) — proposed for the pilot.
 - Date range and employee filters (Phase 9).

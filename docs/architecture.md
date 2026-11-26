@@ -60,7 +60,7 @@ so there is no server cache that could serve one workshop's data to another.
 - **Guard triggers** enforce business rules for every client: duplicate phones and plates, the last
   active owner, mileage that goes backwards, edits to closed job cards, job and task status history,
   quality check while tasks are still open, delivery without an issued invoice, and any change to an
-  issued or void invoice or to the payments ledger.
+  issued or void invoice or to the payments ledger, and any stock figure typed instead of moved.
 - The active workshop is chosen by an `active_workshop` cookie, but membership is re-verified on every
   request; the cookie is only a preference.
 
@@ -79,7 +79,8 @@ Conventions:
   `src/lib/datetime.ts` for `datetime-local` inputs).
 - Nothing is hard-deleted from the UI. Customers and vehicles are archived (owner only); attachments are
   marked removed; history tables are append-only. Invoices are voided, never deleted, and payments and
-  refunds are an append-only ledger — both refuse deletes even for the service key (Phase 6).
+  refunds are an append-only ledger — both refuse deletes even for the service key (Phase 6). Stock is the running total of an append-only
+  movements ledger (Phase 7).
 - Per-workshop numbering (C-0001, JC-0001, INV-0001 — given when an invoice is issued, not drafted) uses `workshop_counters` via
   `next_workshop_number()`, inside the same transaction as the insert, so rejected saves don't burn numbers.
 
@@ -113,3 +114,4 @@ that proves it:
 | 4 | A revised estimate needs fresh approval | `tests/rls/estimates.test.ts` |
 | 5 | A blocked task always records a reason | `tests/rls/tasks.test.ts` |
 | 6 | A void is audited, never hard-deleted | `tests/rls/invoices.test.ts` |
+| 7 | Stock only moves through a recorded movement | `tests/rls/inventory.test.ts` |

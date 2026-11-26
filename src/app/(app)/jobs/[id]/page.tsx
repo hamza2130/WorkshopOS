@@ -82,7 +82,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     // The approved lines of the latest approved version: what the mechanics work from.
     supabase
       .from("estimates")
-      .select("version, estimate_items(id, kind, description, quantity, part_number, position, approval_status)")
+      .select("version, estimate_items(id, kind, description, quantity, part_number, part_id, position, approval_status)")
       .eq("job_card_id", id)
       .in("status", ["approved", "partially_approved"])
       .order("version", { ascending: false })
@@ -105,9 +105,26 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const untaskedLines = approvedLines
     .filter((i) => i.kind !== "part" && i.description.trim().length >= 2 && !taskTitles.has(i.description.trim().slice(0, 200).toLowerCase()))
     .map((i) => i.description);
+  // Stock figures for the parts picker: tracked, active catalogue parts.
+  const { data: stocked } = await supabase
+    .from("parts")
+    .select("id, name, part_number, unit, stock_on_hand")
+    .eq("workshop_id", ctx.workshop.workshopId)
+    .eq("is_active", true)
+    .eq("track_stock", true)
+    .order("name")
+    .limit(1000);
+  const stockById = new Map((stocked ?? []).map((p) => [p.id, p]));
   const approvedParts = approvedLines
     .filter((i) => i.kind === "part")
-    .map((i) => ({ id: i.id, description: i.description, quantity: Number(i.quantity), partNumber: i.part_number }));
+    .map((i) => {
+      const s = i.part_id ? stockById.get(i.part_id) : undefined;
+      return { id: i.id, description: i.description, quantity: Number(i.quantity), partNumber: i.part_number, onHand: s ? Number(s.stock_on_hand) : null, unit: s?.unit };
+    });
+  const approvedPartIds = new Set(approvedLines.map((i) => i.part_id).filter(Boolean));
+  const stockParts = (stocked ?? [])
+    .filter((p) => !approvedPartIds.has(p.id))
+    .map((p) => ({ id: p.id, name: p.name, partNumber: p.part_number, onHand: Number(p.stock_on_hand), unit: p.unit }));
 
   const active = (files.data ?? []).filter((f) => !f.removed_at);
   const { data: signed } = active.length
@@ -394,6 +411,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               parts={work.parts}
               mechanics={mechanics}
               approvedParts={approvedParts}
+              stockParts={stockParts}
               untaskedLines={untaskedLines}
             />
           ) : null}

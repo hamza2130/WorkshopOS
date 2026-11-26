@@ -1,6 +1,6 @@
 # 11 · Labour and parts catalogue
 
-**Phase 4 · Built (stock levels arrive with Inventory in Phase 7)**
+**Phases 4–7 · Built**
 
 ## What it does
 
@@ -36,7 +36,8 @@ when the line is added; changing the catalogue later never changes a sent estima
 
 - `labour_items`: `name`, `description`, `default_price`, `estimated_minutes`, `is_active`.
 - `parts`: `name`, `part_number`, `brand`, `category`, `supplier`, `cost_price`, `selling_price`,
-  `unit`, `is_active`. Phase 7 adds stock and movements to this table.
+  `unit`, `is_active`. Phase 7 adds `track_stock`, `stock_on_hand`, `reorder_level` and `location`
+  — see [inventory](18-inventory.md). Inventory managers can add and edit parts from Inventory too.
 
 ## Security
 
@@ -56,5 +57,4 @@ parts; mechanic sees nothing; duplicate names refused; other workshops see nothi
 
 ## Not yet built
 
-- Stock levels, receipts and consumption (Phase 7).
 - Supplier price lists, bulk import.

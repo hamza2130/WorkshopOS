@@ -131,7 +131,9 @@ export async function recordPartUsed(_: ActionState | undefined, formData: FormD
   const d = parsed.data;
 
   const lineId = d.source.startsWith("line:") ? d.source.slice(5) : null;
-  if (lineId !== null && !isUuid(lineId)) return { error: "Invalid part." };
+  // "part:<id>": a catalogue part that wasn't on the estimate (advisors only; the database checks).
+  const partId = d.source.startsWith("part:") ? d.source.slice(5) : null;
+  if ((lineId !== null && !isUuid(lineId)) || (partId !== null && !isUuid(partId))) return { error: "Invalid part." };
   const description = d.description || formData.get("lineDescription")?.toString().trim() || "";
   if (!description) {
     return { error: "Please fix the highlighted fields.", fieldErrors: { description: ["Describe the part used."] }, values: formValues(formData) };
@@ -143,6 +145,7 @@ export async function recordPartUsed(_: ActionState | undefined, formData: FormD
     job_card_id: d.jobId,
     task_id: d.taskId,
     estimate_item_id: lineId,
+    part_id: partId,
     description: description.slice(0, 300),
     quantity: d.quantity,
     note: d.note,

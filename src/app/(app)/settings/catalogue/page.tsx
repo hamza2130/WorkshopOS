@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { requirePageAccess } from "@/lib/auth/session";
+import { formatQty } from "@/lib/inventory";
 import { formatMoney } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsTabs } from "../settings-tabs";
@@ -72,8 +74,11 @@ export default async function CataloguePage() {
       <Card className="mt-6 p-6">
         <h2 className="text-base font-semibold text-slate-900">Parts</h2>
         <p className="mb-4 mt-1 text-sm text-slate-600">
-          Parts you sell often. Cost prices stay with staff — customers only ever see selling prices. Stock levels arrive
-          with Inventory.
+          Parts you sell often. Cost prices stay with staff — customers only ever see selling prices. Stock is kept in{" "}
+          <Link href="/inventory" className="text-brand-700 hover:underline">
+            Inventory
+          </Link>
+          .
         </p>
         <PartForm />
         {parts.data?.length ? (
@@ -88,6 +93,11 @@ export default async function CataloguePage() {
                     {formatMoney(p.selling_price, cur)} / {p.unit}
                     {p.cost_price != null ? ` (cost ${formatMoney(p.cost_price, cur)})` : ""}
                   </span>
+                  {p.track_stock ? (
+                    <Link href={`/inventory/${p.id}`} className="ml-2 text-xs text-brand-700 hover:underline">
+                      {formatQty(p.stock_on_hand)} {p.unit} in stock
+                    </Link>
+                  ) : null}
                   {!p.is_active ? (
                     <span className="ml-2">
                       <Badge tone="muted">Hidden</Badge>

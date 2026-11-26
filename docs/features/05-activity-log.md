@@ -1,6 +1,6 @@
 # 05 · Activity log
 
-**Phases 1–6 · Built**
+**Phases 1–7 · Built**
 
 ## What it does
 
@@ -24,7 +24,8 @@ Users with `activity.view` — owners and service advisors. Reached from **Emplo
 | Inspections and estimates | inspection completed; estimate version started (with revision reason), sent, new link issued, decided (shown as "Customer responded…" when it came from the link) |
 | Tasks and parts used | task added (with assignee), task moved (from → to, with reason), task reassigned, part used recorded or removed (quantity × description) |
 | Invoices and money | draft started, invoice issued (with total), voided (with reason), payment recorded (amount, method), refund (amount, method, reason) |
-| Catalogue | labour service or part added or updated |
+| Stock | stock received (quantity, supplier), stock counted (counted figure, change, reason) — each consumption is already logged as a part used |
+| Catalogue | labour service or part added or updated (parts are named and link to their stock page) |
 
 Every event is shown as a sentence ("moved task “Brake service” on JC-0001 from in progress to done").
 An event without a description falls back to its code, so a missing label shows up in review.
