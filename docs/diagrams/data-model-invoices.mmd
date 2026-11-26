@@ -1,0 +1,48 @@
+---
+title: Phase 6 data — invoices, lines and the money ledger
+---
+erDiagram
+  job_cards ||--o{ invoices : "billed by (one live at a time)"
+  customers ||--o{ invoices : "billed to"
+  vehicles ||--o{ invoices : "for"
+  estimates |o--o{ invoices : "built from approved version"
+  invoices ||--|{ invoice_items : "lines"
+  estimate_items |o--o{ invoice_items : "copied from"
+  parts |o--o{ invoice_items : "catalogue part"
+  invoices ||--o{ payments : "ledger"
+  payments |o--o{ payments : "refund of"
+
+  invoices {
+    uuid id PK
+    uuid workshop_id FK
+    text invoice_number "null while draft; unique per workshop"
+    invoice_status status "draft | issued | void"
+    numeric total "kept by recalculate_invoice()"
+    numeric amount_paid "payments minus refunds"
+    numeric balance_due "generated: total - amount_paid"
+    text customer_name "copied at issue"
+    text vehicle_registration "copied at issue"
+    timestamptz issued_at
+    timestamptz voided_at
+    text void_reason "required to void"
+  }
+  invoice_items {
+    uuid id PK
+    estimate_item_kind kind
+    invoice_line_source source "approved_estimate | parts_used | added"
+    numeric quantity
+    numeric unit_price
+    numeric discount
+    boolean taxable
+    numeric line_total "generated"
+  }
+  payments {
+    uuid id PK
+    payment_kind kind "payment | refund"
+    numeric amount "always positive"
+    payment_method method "cash, bank transfer, JazzCash, ..."
+    text note "required for refunds"
+    uuid refund_of FK
+    timestamptz received_at
+    uuid recorded_by FK
+  }

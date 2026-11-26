@@ -1,0 +1,23 @@
+---
+title: From finished work to the car leaving
+---
+flowchart TD
+  QC["Job at Quality check<br/>or Ready for delivery"] --> Create["Owner / accountant:<br/>Create invoice"]
+  Create --> Draft["Draft: approved estimate lines<br/>+ parts used, if the customer agreed"]
+  Draft --> Issue["Issue invoice<br/>INV-0001, frozen"]
+  Issue --> Pay{"Customer pays?"}
+  Pay -->|"Full"| Paid["Paid<br/>advisor + owners notified"]
+  Pay -->|"Part"| Part["Part paid<br/>balance on invoice,<br/>customer and dashboard"]
+  Pay -->|"Not yet"| Unpaid["Unpaid"]
+  Paid --> Deliver["Advisor: Deliver to customer"]
+  Part --> Deliver
+  Unpaid --> Deliver
+  Deliver --> Done["Delivered"]
+
+  Wrong{"Billed by mistake?"} -.-> Refund["Refund each payment<br/>(reason, owner / accountant)"]
+  Refund -.-> Void["Void invoice (reason)<br/>kept on record"]
+  Void -.-> Create
+  Issue -.-> Wrong
+
+  NoInv["No issued invoice"] -. "database refuses delivery<br/>(invoice_required)" .-> Deliver
+  Live["Live invoice"] -. "database refuses cancelling the job<br/>(invoice_open)" .-> Cancel["Cancel job"]

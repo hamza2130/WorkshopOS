@@ -19,7 +19,7 @@ Docs are updated in the same change as the code they describe.
 | 06 | [Customers](features/06-customers.md) | 2 | Built |
 | 07 | [Vehicles and mileage history](features/07-vehicles-and-mileage.md) | 2 | Built |
 | 08 | [Job cards](features/08-job-cards.md) | 3 | Built |
-| 09 | [Dashboard](features/09-dashboard.md) | 1–3 | Built (job board); finance tiles later |
+| 09 | [Dashboard](features/09-dashboard.md) | 1–6 | Built (job board, money today); stock tiles later |
 | 10 | [Vehicle inspections](features/10-inspections.md) | 4 | Built |
 | 11 | [Labour and parts catalogue](features/11-labour-and-parts-catalogue.md) | 4 | Built (stock in Phase 7) |
 | 12 | [Estimates and customer approval](features/12-estimates-and-customer-approval.md) | 4 | Built |
@@ -27,6 +27,7 @@ Docs are updated in the same change as the code they describe.
 | 14 | [Tasks and mechanic assignment](features/14-tasks-and-assignment.md) | 5 | Built |
 | 15 | [Mechanic "My jobs" (phone view)](features/15-mechanic-my-jobs.md) | 5 | Built |
 | 16 | [Parts used](features/16-parts-used.md) | 5 | Built (stock in Phase 7) |
+| 17 | [Invoices, payments, refunds and void](features/17-invoices-and-payments.md) | 6 | Built |
 
 Every spec uses the same sections: **What it does · Who can use it · Screens · How it works · Rules ·
 Data · Security · Code · Tests · Not yet built.**
@@ -53,6 +54,9 @@ Sources are Mermaid files in [`diagrams/`](diagrams); each has a rendered PNG ne
 | [Task status workflow](diagrams/task-status-machine.png) | Task moves, who makes them, and the three checks on a blocked reason |
 | [Mechanic work flow](diagrams/mechanic-work-flow.png) | Approved work → tasks → mechanic's phone → blocked → quality check |
 | [Phase 5 data](diagrams/data-model-tasks.png) | Tasks, task history, parts used |
+| [Invoice lifecycle](diagrams/invoice-lifecycle.png) | Draft → issued (unpaid / part paid / paid) → void, and why a void is never a delete |
+| [Billing flow](diagrams/billing-flow.png) | Finished work → invoice → payment → delivery, and the two rules the database enforces |
+| [Phase 6 data](diagrams/data-model-invoices.png) | Invoices, invoice lines, the payments and refunds ledger |
 
 ### Regenerating the PNGs
 

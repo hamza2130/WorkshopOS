@@ -164,7 +164,17 @@ migration `20261116000001_job_cards.sql`.
 Unit tests: `job-schema.test.ts`, `datetime.test.ts`. The full check-in chain, skip inspection, photo
 upload, notes, hold and resume, dashboard counts and search were verified in the browser.
 
+## Billing (Phase 6)
+
+The job card shows an **Invoice** summary next to the inspection and estimate. From *Quality check*
+onwards, the Next step offers *Create invoice* (owners and accountants), then *Finish and issue the
+invoice*; advisors without billing rights are told to ask for it. **Deliver to customer** only appears
+once the invoice is issued, asks for confirmation and says what is still owed — a car can leave with a
+balance. **Cancel job** is hidden while a draft or issued invoice exists (void it first). The database
+enforces both (`invoice_required`, `invoice_open`). Invoice issued, payments, refunds and voids appear
+on the timeline. See [invoices](17-invoices-and-payments.md).
+
 ## Not yet built
 
-- Invoices and payments (Phase 6), parts used (Phase 7).
+- Stock deduction for parts used (Phase 7).
 - Printable job card / PDF.

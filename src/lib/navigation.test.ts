@@ -16,4 +16,9 @@ describe("visibleNav", () => {
   it("shows a cashier invoices and reports but not staff or settings", () => {
     expect(labels("cashier")).toEqual(["Dashboard", "Invoices", "Reports"]);
   });
+
+  it("shows advisors invoices alongside their job screens", () => {
+    expect(labels("advisor")).toContain("Invoices");
+    expect(labels("inventory_manager")).not.toContain("Invoices");
+  });
 });

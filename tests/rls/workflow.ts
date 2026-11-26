@@ -49,6 +49,43 @@ export async function approveAll(token: string, approvedIds: string[]) {
   return anonClient().rpc("respond_to_estimate", { p_token: token, p_approved: approvedIds, p_customer_name: "Test Customer" });
 }
 
+export function move(client: Client, job: string, action: string, expected: string, reason?: string) {
+  return client.rpc("change_job_status", {
+    p_job: job,
+    p_action: action,
+    p_expected_status: expected as never,
+    p_reason: reason,
+  });
+}
+
+/** From check-in to Ready for delivery: approval, then the work moves with no tasks. */
+export async function readyForDelivery(client: Client, ws: string, job: string, lines?: Parameters<typeof draftEstimate>[3]) {
+  await completeInspection(client, job);
+  const estimate = await draftEstimate(client, ws, job, lines);
+  const token = await sendEstimate(client, estimate);
+  const res = await approveAll(token, await itemIds(client, estimate));
+  if (res.error) throw res.error;
+  for (const [action, from] of [
+    ["request_assignment", "approved"],
+    ["start_work", "awaiting_assignment"],
+    ["finish_work", "in_progress"],
+    ["pass_quality_check", "quality_check"],
+  ]) {
+    const moved = await move(client, job, action, from);
+    if (moved.error) throw moved.error;
+  }
+  return estimate;
+}
+
+/** Drafts and issues the job's invoice (needs invoices.manage). Returns the invoice id. */
+export async function billJob(client: Client, job: string) {
+  const created = await client.rpc("create_invoice", { p_job: job });
+  if (created.error) throw created.error;
+  const issued = await client.rpc("issue_invoice", { p_invoice: created.data });
+  if (issued.error) throw issued.error;
+  return created.data;
+}
+
 /** From check-in to Approved via inspection, estimate and the customer's link. */
 export async function approveThroughEstimate(client: Client, ws: string, job: string) {
   await completeInspection(client, job);

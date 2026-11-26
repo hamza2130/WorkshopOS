@@ -15,8 +15,10 @@ import { whatsappLink } from "@/lib/phone";
 import { getRequestTime, isOverdue } from "@/lib/request-time";
 import { getMechanics } from "@/lib/staff";
 import { createClient } from "@/lib/supabase/server";
+import { BILLABLE_STAGES, PAYMENT_METHOD_LABELS, PAYMENT_STATE_LABELS, paymentState } from "@/lib/invoices";
 import { OPEN_TASK, TASK_STAGES, TASK_STATUS_LABELS } from "@/lib/tasks";
 import { loadJobWork } from "@/lib/work";
+import { createInvoice } from "../../invoices/actions";
 import { startEstimate } from "./estimate/actions";
 import { startInspection } from "./inspection/actions";
 import { Attachments, type AttachmentItem } from "./attachments";
@@ -33,7 +35,7 @@ type TimelineEvent = {
   title: string;
   detail?: string | null;
   badge?: string;
-  tone?: "status" | "note" | "file" | "task";
+  tone?: "status" | "note" | "file" | "task" | "money";
 };
 
 const name = (p: { full_name: string; email: string } | null) => p?.full_name || p?.email || "Someone";
@@ -56,7 +58,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   if (!job || !job.customers || !job.vehicles) notFound();
 
   const now = getRequestTime();
-  const [history, notes, files, actions, inspection, estimates, work, mechanics, approved] = await Promise.all([
+  const [history, notes, files, actions, inspection, estimates, work, mechanics, approved, invoices] = await Promise.all([
     supabase
       .from("job_status_history")
       .select("id, from_status, to_status, action, reason, changed_at, profiles(full_name, email)")
@@ -86,6 +88,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
       .order("version", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("invoices")
+      .select(
+        "id, invoice_number, status, total, amount_paid, balance_due, created_at, issued_at, voided_at, void_reason, issuer:profiles!invoices_issued_by_fkey(full_name, email), voider:profiles!invoices_voided_by_fkey(full_name, email), payments(id, kind, amount, method, received_at, recorder:profiles!payments_recorded_by_fkey(full_name, email))",
+      )
+      .eq("job_card_id", id)
+      .order("created_at"),
   ]);
 
   const approvedLines = (approved.data?.estimate_items ?? [])
@@ -117,17 +126,32 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const actionLabel = new Map((actions.data ?? []).map((a) => [a.code, a.label]));
   const openTasks = work.tasks.filter((t) => OPEN_TASK.includes(t.status)).length;
   const planning = (job.status === "approved" || job.status === "awaiting_assignment") && !work.tasks.length;
+  const liveInvoice = (invoices.data ?? []).find((i) => i.status !== "void") ?? null;
+  const billable = (BILLABLE_STAGES as readonly string[]).includes(job.status);
+  const showBilling = billable || (invoices.data ?? []).length > 0;
+  const voidedNumbers = (invoices.data ?? []).filter((i) => i.status === "void").map((i) => i.invoice_number ?? "a draft");
   // Inspection, estimate and approval moves happen through their own screens ("system").
   const available = (actions.data ?? [])
     .filter((a) => a.from_status === job.status && isPermission(a.permission) && ctx.permissions.has(a.permission))
-    // The database refuses quality check while tasks are open; don't offer a button that can only fail.
+    // The database refuses these; don't offer buttons that can only fail. The panel says why instead.
     .filter((a) => !(a.code === "finish_work" && openTasks > 0))
+    .filter((a) => !(a.code === "deliver" && liveInvoice?.status !== "issued"))
+    .filter((a) => !(a.code === "cancel" && liveInvoice))
     .map((a) => ({
       code: a.code,
       label: a.label,
       requiresReason: a.requires_reason,
       // While the work still needs planning, that is the main thing to do — not a status change.
       tone: planning && a.code === "request_assignment" ? "secondary" : a.tone,
+      // Delivery closes the job for good, so it gets an "are you sure?" that says what's owed.
+      confirm:
+        a.code === "deliver"
+          ? `Hand ${job.vehicles?.registration_number} back to ${job.customers?.name} and close ${job.job_number}? ${
+              liveInvoice && Number(liveInvoice.balance_due) > 0
+                ? `${formatMoney(liveInvoice.balance_due, ctx.workshop.currency)} is still owed on ${liveInvoice.invoice_number}.`
+                : "The invoice is fully paid."
+            } A delivered job can't be reopened.`
+          : undefined,
     }));
   const insp = inspection.data;
   const findingsCount = (insp?.job_inspection_items ?? []).filter((i) => i.outcome === "needs_attention" || i.outcome === "requires_repair").length;
@@ -175,6 +199,25 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         ? [{ key: `r${f.id}`, at: f.removed_at, who: name(f.remover), title: "Removed a file", detail: f.file_name, tone: "file" as const }]
         : []),
     ]),
+    ...(invoices.data ?? []).flatMap((i) => {
+      const money = (n: number | string) => formatMoney(n, ctx.workshop.currency);
+      return [
+        ...(i.issued_at
+          ? [{ key: `i${i.id}`, at: i.issued_at, who: name(i.issuer), title: `Invoice ${i.invoice_number} issued`, detail: money(i.total), tone: "money" as const }]
+          : []),
+        ...(i.payments ?? []).map((p) => ({
+          key: `p${p.id}`,
+          at: p.received_at,
+          who: name(p.recorder),
+          title: p.kind === "refund" ? `Refunded ${money(p.amount)}` : `Payment of ${money(p.amount)} received`,
+          detail: `${PAYMENT_METHOD_LABELS[p.method]} · ${i.invoice_number}`,
+          tone: "money" as const,
+        })),
+        ...(i.voided_at
+          ? [{ key: `v${i.id}`, at: i.voided_at, who: name(i.voider), title: `Invoice ${i.invoice_number ?? "draft"} voided`, detail: i.void_reason, tone: "money" as const }]
+          : []),
+      ];
+    }),
   ].sort((a, b) => a.at.localeCompare(b.at));
 
   const closed = CLOSED.includes(job.status);
@@ -259,11 +302,34 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 {openTasks} task{openTasks === 1 ? "" : "s"} still open. When every task is done or cancelled, you can move the
                 job to quality check.
               </p>
+            ) : billable && !liveInvoice ? (
+              ctx.permissions.has("invoices.manage") ? (
+                <form action={createInvoice} className="mb-3">
+                  <input type="hidden" name="jobId" value={job.id} />
+                  <button type="submit" className={buttonClass(job.status === "ready_for_delivery" ? "primary" : "secondary")}>
+                    Create invoice
+                  </button>
+                </form>
+              ) : (
+                <p className="mb-3 text-sm text-slate-600">
+                  {job.status === "ready_for_delivery" ? "The car can go once the invoice is issued — " : "No invoice yet — "}
+                  ask the owner or accountant to make it.
+                </p>
+              )
+            ) : billable && liveInvoice?.status === "draft" ? (
+              <Link href={`/invoices/${liveInvoice.id}`} className={buttonClass("primary", "mb-3")}>
+                Finish and issue the invoice
+              </Link>
+            ) : job.status === "ready_for_delivery" && liveInvoice && Number(liveInvoice.balance_due) > 0 ? (
+              <p className="mb-3 text-sm text-slate-600">
+                {formatMoney(liveInvoice.balance_due, ctx.workshop.currency)} is still due on {liveInvoice.invoice_number}. The car can
+                leave with a balance — it stays on the customer&apos;s account.
+              </p>
             ) : null}
             <StatusActions key={job.status} jobId={job.id} status={job.status} closed={closed} actions={available} />
           </Card>
 
-          <Card className="grid gap-4 p-6 sm:grid-cols-2">
+          <Card className={`grid gap-4 p-6 ${showBilling ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Inspection</h2>
               <p className="mt-1 text-sm text-slate-600">
@@ -292,6 +358,31 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 </Link>
               ) : null}
             </div>
+            {showBilling ? (
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Invoice</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  {liveInvoice
+                    ? liveInvoice.status === "draft"
+                      ? `Draft · ${formatMoney(liveInvoice.total, ctx.workshop.currency)}`
+                      : `${liveInvoice.invoice_number} · ${PAYMENT_STATE_LABELS[paymentState(liveInvoice.status, Number(liveInvoice.total), Number(liveInvoice.amount_paid))]} · ${formatMoney(liveInvoice.total, ctx.workshop.currency)}`
+                    : voidedNumbers.length
+                      ? `Voided: ${voidedNumbers.join(", ")}. No current invoice.`
+                      : "None yet."}
+                </p>
+                {liveInvoice && Number(liveInvoice.balance_due) > 0 && liveInvoice.status === "issued" ? (
+                  <p className="text-sm font-medium text-amber-800">{formatMoney(liveInvoice.balance_due, ctx.workshop.currency)} due</p>
+                ) : null}
+                {liveInvoice || invoices.data?.length ? (
+                  <Link
+                    href={`/invoices/${(liveInvoice ?? invoices.data!.at(-1)!).id}`}
+                    className="mt-2 inline-block text-sm text-brand-700 hover:underline"
+                  >
+                    {liveInvoice ? "Open invoice" : "Open voided invoice"}
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </Card>
 
           {showWork ? (
@@ -393,7 +484,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                           ? "bg-amber-500"
                           : e.tone === "task"
                             ? "bg-emerald-500"
-                            : "bg-slate-400"
+                            : e.tone === "money"
+                              ? "bg-violet-500"
+                              : "bg-slate-400"
                     }`}
                   />
                   <p className="text-sm font-medium text-slate-900">{e.title}</p>

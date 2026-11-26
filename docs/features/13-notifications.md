@@ -1,11 +1,11 @@
 # 13 · In-app notifications
 
-**Phases 4–5 · Built**
+**Phases 4–6 · Built**
 
 ## What it does
 
 Tells staff when something needs their attention without them watching the screen. For now: a
-customer's decision on an estimate, new work for a mechanic, a blocked task, and all tasks finished. The bell in the header shows the unread count; the list is at
+customer's decision on an estimate, new work for a mechanic, a blocked task, all tasks finished, and an invoice paid in full. The bell in the header shows the unread count; the list is at
 `/notifications`.
 
 ## Who gets what
@@ -17,10 +17,11 @@ customer's decision on an estimate, new work for a mechanic, a blocked task, and
 | A task is blocked | The job's service advisor and every active owner, except whoever blocked it — with the reason |
 | A job is cancelled while tasks are open | Each mechanic who still had open work on it (not whoever cancelled it) — with the job's reason |
 | The last open task is completed or cancelled | The job's service advisor and every active owner, except whoever made the change — "ready for quality check" |
+| A payment clears an invoice's balance | The job's service advisor and every active owner, except whoever recorded it — "paid in full", so the car can be handed back |
 
 ## How it works
 
-`notify_job_staff()` is called inside the decision and task functions, and assignment notices come from
+`notify_job_staff()` is called inside the decision, task and payment functions, and assignment notices come from
 the task trigger, all in the same transaction, so the event can't happen without its notification. Opening a notification marks it read and goes to the job card;
 **Mark all as read** clears the rest.
 
