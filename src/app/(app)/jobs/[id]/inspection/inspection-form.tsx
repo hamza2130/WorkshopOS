@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { FormMessage, SubmitButton } from "@/components/form";
-import { cx } from "@/components/ui";
+import { buttonClass, cx } from "@/components/ui";
 import { CATEGORY_LABELS, OUTCOME_LABELS, OUTCOMES, type InspectionCategory, type InspectionOutcome } from "@/lib/estimates";
 import { saveInspection } from "./actions";
 
@@ -15,14 +15,42 @@ const OUTCOME_STYLES: Record<InspectionOutcome, string> = {
   not_inspected: "has-checked:bg-slate-600 has-checked:text-white has-checked:ring-slate-600",
 };
 
-export function InspectionForm({ jobId, inspectionId, rows }: { jobId: string; inspectionId: string; rows: InspectionRow[] }) {
+export function InspectionForm({
+  jobId,
+  inspectionId,
+  rows,
+  summary,
+}: {
+  jobId: string;
+  inspectionId: string;
+  rows: InspectionRow[];
+  summary: string;
+}) {
   const [state, action] = useActionState(saveInspection, undefined);
+  const form = useRef<HTMLFormElement>(null);
+
+  // Most areas are usually fine: mark the findings, then one tap for the rest.
+  function markRestNormal() {
+    for (const row of rows) {
+      const picked = form.current?.querySelector<HTMLInputElement>(`input[name="outcome_${row.category}"]:checked`);
+      if (!picked || picked.value === "not_inspected") {
+        form.current?.querySelector<HTMLInputElement>(`input[name="outcome_${row.category}"][value="normal"]`)?.click();
+      }
+    }
+  }
 
   return (
-    <form action={action} className="space-y-4">
+    <form ref={form} action={action} className="space-y-4">
       <input type="hidden" name="jobId" value={jobId} />
       <input type="hidden" name="inspectionId" value={inspectionId} />
       <FormMessage state={state} />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white px-5 py-3 ring-1 ring-slate-200">
+        <p className="text-sm text-slate-600">Mark what you found, then set everything you haven&apos;t touched to normal in one go.</p>
+        <button type="button" onClick={markRestNormal} className={buttonClass("secondary", "py-1.5")}>
+          Mark the rest normal
+        </button>
+      </div>
 
       <ul className="divide-y divide-slate-100 rounded-lg bg-white ring-1 ring-slate-200">
         {rows.map((row) => (
@@ -71,6 +99,7 @@ export function InspectionForm({ jobId, inspectionId, rows }: { jobId: string; i
           name="summary"
           rows={2}
           maxLength={2000}
+          defaultValue={summary}
           className="mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
         {/* Save first in the markup so Enter saves rather than completes. */}

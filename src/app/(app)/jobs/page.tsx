@@ -119,7 +119,15 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                         <span className="block text-xs text-slate-500">{j.customer_phone}</span>
                       </td>
                       <td className="px-6 py-3">
-                        <JobStatusBadge status={j.status} />
+                        <div className="flex flex-wrap gap-1">
+                          <JobStatusBadge status={j.status} />
+                          {/* The Expected column is hidden on small screens, so flag lateness here. */}
+                          {overdue ? (
+                            <span className="lg:hidden">
+                              <Badge tone="warning">Overdue</Badge>
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="hidden px-6 py-3 text-slate-600 lg:table-cell">{formatDateTime(j.check_in_at, ctx.workshop.timezone)}</td>
                       <td className="hidden px-6 py-3 text-slate-600 lg:table-cell">

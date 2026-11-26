@@ -24,7 +24,8 @@ Mechanics are sent to [My jobs](15-mechanic-my-jobs.md) instead.
 ## How it works
 
 Counts come from `rpc job_status_counts(ws)`, which runs under the user's own permissions, so a role
-that can't see job cards gets no counts. Tiles link to `/jobs?status=<status>`.
+that can't see job cards gets no counts. Tiles link to `/jobs?status=<status>`. Stages with no jobs
+are dimmed so the busy ones stand out.
 
 ## Rules
 

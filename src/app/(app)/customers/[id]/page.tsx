@@ -50,6 +50,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
 
   const wa = c.whatsapp ? whatsappLink(c.whatsapp, `Assalam-o-Alaikum ${c.name}, this is ${ctx.workshop.workshopName}.`) : null;
   const isOwner = ctx.workshop.role === "owner";
+  const canOpenJobs = ctx.permissions.has("jobs.manage");
 
   return (
     <>
@@ -144,9 +145,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-sm tabular-nums text-slate-600">
-                      {latest.has(v.id) ? `${latest.get(v.id)!.toLocaleString("en-PK")} km` : "No mileage yet"}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm tabular-nums text-slate-600">
+                        {latest.has(v.id) ? `${latest.get(v.id)!.toLocaleString("en-PK")} km` : "No mileage yet"}
+                      </span>
+                      {/* Returning customers usually come in for a new job on a car we already know. */}
+                      {canOpenJobs && !v.archived_at && !c.archived_at ? (
+                        <Link href={withParams("/jobs/new", { vehicleId: v.id })} className={buttonClass("secondary", "py-1.5")}>
+                          New job card
+                        </Link>
+                      ) : null}
+                    </div>
                   </li>
                 ))}
               </ul>

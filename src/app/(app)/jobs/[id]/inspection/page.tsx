@@ -90,7 +90,7 @@ export default async function InspectionPage({ params }: PageProps<"/jobs/[id]/i
         </div>
       ) : (
         <div className="max-w-4xl">
-          <InspectionForm jobId={job.id} inspectionId={insp.id} rows={rows} />
+          <InspectionForm jobId={job.id} inspectionId={insp.id} rows={rows} summary={insp.summary ?? ""} />
         </div>
       )}
     </>

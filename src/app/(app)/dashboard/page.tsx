@@ -100,8 +100,9 @@ export default async function DashboardPage() {
                     href={`/jobs?status=${status}`}
                     className="block rounded-md px-4 py-3 ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300"
                   >
-                    <span className="block text-2xl font-semibold tabular-nums text-slate-900">{n}</span>
-                    <span className="text-sm text-slate-600">{JOB_STATUS_LABELS[status]}</span>
+                    {/* Empty stages are dimmed so the busy ones stand out. */}
+                    <span className={`block text-2xl font-semibold tabular-nums ${n ? "text-slate-900" : "text-slate-300"}`}>{n}</span>
+                    <span className={`text-sm ${n ? "text-slate-700" : "text-slate-400"}`}>{JOB_STATUS_LABELS[status]}</span>
                   </Link>
                 </li>
               );

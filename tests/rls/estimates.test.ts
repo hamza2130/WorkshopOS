@@ -285,6 +285,23 @@ describe("inspections", () => {
     expect((await advisorA.client.from("job_inspection_items").update({ outcome: "normal" }).eq("id", brakes)).error?.message).toBe("inspection_completed");
     expect((await advisorA.client.rpc("complete_inspection", { p_job: job })).error?.message).toBe("inspection_completed");
   });
+
+  it("keeps a draft summary while the inspection is open, then freezes it", async () => {
+    const job = await newJob();
+    const insp = (await advisorA.client.rpc("start_inspection", { p_job: job })).data!;
+
+    const draft = await advisorA.client.from("job_inspections").update({ summary: "Pads low, check AC" }).eq("id", insp).select("summary");
+    expect(draft.data?.[0]?.summary).toBe("Pads low, check AC");
+    // Only staff who run jobs may write it, and only the summary column.
+    expect((await mechanicA.client.from("job_inspections").update({ summary: "x" }).eq("id", insp).select("id")).data ?? []).toEqual([]);
+    expect((await advisorA.client.from("job_inspections").update({ completed_at: new Date().toISOString() }).eq("id", insp)).error).not.toBeNull();
+
+    await advisorA.client.rpc("complete_inspection", { p_job: job, p_summary: "Pads low, AC regas" });
+    const late = await advisorA.client.from("job_inspections").update({ summary: "changed later" }).eq("id", insp);
+    expect(late.error?.message).toBe("inspection_completed");
+    const { data } = await admin.from("job_inspections").select("summary").eq("id", insp).single();
+    expect(data?.summary).toBe("Pads low, AC regas");
+  });
 });
 
 describe("the customer's approval page", () => {

@@ -75,11 +75,15 @@ reason is recorded so the timeline stays honest. It is a product decision made i
 removed by deleting one row of `job_status_actions`.
 
 The job card's **Next step** panel leads with the right screen for the stage: *Start / Continue
-inspection*, *Prepare / Continue estimate*, or *Waiting for the customer — view estimate*. See
-[inspections](10-inspections.md) and [estimates](12-estimates-and-customer-approval.md). Since Phase 5
-the first task a mechanic starts moves an *Approved* or *Awaiting assignment* job to *In progress*
-(⚙ *Work started*), and *Work complete — quality check* is refused while any task is open — see
-[tasks](14-tasks-and-assignment.md). The job card's **Work** and **Parts used** cards show the tasks. On the timeline, moves made through the
+inspection*, *Prepare / Continue estimate*, or *Waiting for the customer — view estimate*. *Start
+inspection* and *Prepare estimate* act in one click (they start the inspection or the first draft and
+open it). See [inspections](10-inspections.md) and [estimates](12-estimates-and-customer-approval.md).
+Since Phase 5 the first task a mechanic starts moves an *Approved* or *Awaiting assignment* job to *In
+progress* (⚙ *Work started*), and *Work complete — quality check* is refused while any task is open — see
+[tasks](14-tasks-and-assignment.md). While an approved job has no tasks yet, **Plan the work** is the
+main button (it jumps to the Work card) and *Ready to assign* is shown as a secondary action. While
+tasks are open, *Work complete — quality check* isn't offered at all; the panel says how many tasks are
+still open instead. The job card's **Work** and **Parts used** cards show the tasks. On the timeline, moves made through the
 customer's link show "Customer (approval link)".
 
 ## How the gate is enforced

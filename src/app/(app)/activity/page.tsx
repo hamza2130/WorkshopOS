@@ -7,6 +7,7 @@ import { requirePageAccess } from "@/lib/auth/session";
 import { formatDateTime } from "@/lib/format";
 import { isJobStatus, JOB_STATUS_LABELS } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
+import { TASK_STATUS_LABELS, type TaskStatus } from "@/lib/tasks";
 
 export const metadata: Metadata = { title: "Activity" };
 
@@ -21,9 +22,14 @@ type Meta = {
   file_name?: string;
   version?: number;
   decision?: string;
+  task?: string;
+  assignee?: string | null;
+  description?: string;
+  quantity?: number;
 };
 
 const statusLabel = (s?: string) => (s && isJobStatus(s) ? JOB_STATUS_LABELS[s] : s ?? "?");
+const taskStatus = (s?: string) => (s && s in TASK_STATUS_LABELS ? TASK_STATUS_LABELS[s as TaskStatus].toLowerCase() : s ?? "?");
 
 type Names = {
   people: Map<string, string>;
@@ -131,6 +137,42 @@ function describe(action: string, entityId: string | null, meta: Meta, names: Na
         </>
       );
     }
+    case "task.created": {
+      const who = meta.assignee ? names.people.get(meta.assignee) : null;
+      return (
+        <>
+          added task “{meta.task}” to {record("jobs", entityId, names)}
+          {who ? ` for ${who}` : ""}
+        </>
+      );
+    }
+    case "task.status_changed":
+      return (
+        <>
+          moved task “{meta.task}” on {record("jobs", entityId, names)} from {taskStatus(meta.from)} to {taskStatus(meta.to)}
+          {meta.reason ? ` — “${meta.reason}”` : ""}
+        </>
+      );
+    case "task.reassigned": {
+      const to = meta.to ? names.people.get(meta.to) : null;
+      return (
+        <>
+          {to ? `assigned task “${meta.task}” to ${to}` : `unassigned task “${meta.task}”`} on {record("jobs", entityId, names)}
+        </>
+      );
+    }
+    case "part_used.recorded":
+      return (
+        <>
+          recorded {Number(meta.quantity)} × {meta.description} used on {record("jobs", entityId, names)}
+        </>
+      );
+    case "part_used.removed":
+      return (
+        <>
+          removed {Number(meta.quantity)} × {meta.description} from the parts used on {record("jobs", entityId, names)}
+        </>
+      );
     case "labour_item.created":
     case "part.created":
       return <>added a {action.startsWith("part") ? "part" : "labour service"} to the catalogue</>;
@@ -156,7 +198,7 @@ export default async function ActivityPage() {
   const ids = (pred: (e: NonNullable<typeof data>[number], m: Meta) => (string | null | undefined)[]) => [
     ...new Set(data.flatMap((e) => pred(e, e.metadata as Meta)).filter((x): x is string => Boolean(x))),
   ];
-  const personIds = ids((_, m) => [m.user_id]);
+  const personIds = ids((e, m) => [m.user_id, m.assignee, ...(e.action === "task.reassigned" ? [m.from, m.to] : [])]);
   const customerIds = ids((e, m) => (e.entity_type === "customer" ? [e.entity_id] : e.action === "vehicle.transferred" ? [m.from, m.to] : []));
   const vehicleIds = ids((e) => (e.entity_type === "vehicle" ? [e.entity_id] : []));
   const jobIds = ids((e) => (e.entity_type === "job_card" ? [e.entity_id] : []));

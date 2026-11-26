@@ -35,7 +35,7 @@ export function WorkPanel({
 
   return (
     <>
-      <Card className="p-6">
+      <Card id="work" className="scroll-mt-6 p-6">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900">Work</h2>
           {live.length ? (

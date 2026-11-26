@@ -142,7 +142,8 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                       <tr>
-                        <th scope="col" className="px-6 py-2 font-medium">Line</th>
+                        {/* Keeps descriptions readable; on narrow screens the table scrolls instead. */}
+                        <th scope="col" className="min-w-52 px-6 py-2 font-medium">Line</th>
                         <th scope="col" className="px-3 py-2 text-right font-medium">Qty</th>
                         <th scope="col" className="px-3 py-2 text-right font-medium">Price</th>
                         <th scope="col" className="px-3 py-2 text-right font-medium">Discount</th>
