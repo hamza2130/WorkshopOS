@@ -52,6 +52,14 @@ export async function createEstimate(_: ActionState | undefined, formData: FormD
   redirect(`/jobs/${jobId}/estimate`);
 }
 
+// One click from the job card: starts the first draft and opens it. If it can't
+// be started, the estimate page shows the reason and the button again.
+export async function startEstimate(formData: FormData) {
+  const jobId = formData.get("jobId");
+  const result = await createEstimate(undefined, formData);
+  if (result?.error) redirect(isUuid(jobId) ? `/jobs/${jobId}/estimate` : "/jobs");
+}
+
 async function nextPosition(supabase: Awaited<ReturnType<typeof createClient>>, estimateId: string) {
   const { data } = await supabase
     .from("estimate_items")

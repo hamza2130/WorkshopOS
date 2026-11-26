@@ -19,15 +19,18 @@ customer with it.
 | Route | Purpose |
 | --- | --- |
 | `/jobs/[id]/inspection` | Start, record (all 13 areas on one page), save progress, complete; read-only once complete |
-| Job card | "Start / Continue inspection" as the next step; inspection summary card |
+| Job card | "Start inspection" (one click: starts it and opens the form) / "Continue inspection" as the next step; inspection summary card |
 
 ## How it works
 
 1. **Start.** `rpc start_inspection(job)` creates the inspection and one row per category, all
-   *Not inspected*. Starting twice returns the same inspection.
+   *Not inspected*. Starting twice returns the same inspection. The job card's **Start inspection**
+   button calls it directly, so there's no second "Start" screen.
 2. **Record.** For each category: *Normal*, *Needs attention*, *Requires repair* or *Not inspected*,
-   plus a note (e.g. "front pads at 2 mm"). **Save progress** writes only what changed, attributed to
-   the person saving.
+   plus a note (e.g. "front pads at 2 mm"). **Mark the rest normal** sets every category still on
+   *Not inspected* to *Normal* in one tap (nothing is saved until you save). **Save progress** writes
+   only what changed, attributed to the person saving — including the summary, which is kept as a
+   draft until completion.
 3. **Complete.** **Save and complete inspection** saves, then `rpc complete_inspection(job, summary)`
    locks the inspection and, if the job is *Awaiting inspection*, moves it to *Awaiting estimate*
    (timeline: "Inspection complete").
@@ -45,7 +48,8 @@ system · Air conditioning · Fluids · Exterior · Interior.
 ## Rules
 
 - One inspection per job card. It can't be started on drafts, delivered or cancelled jobs.
-- Completed inspections can't be edited (trigger `guard_inspection_item`).
+- Completed inspections can't be edited: the items (trigger `guard_inspection_item`) and the summary
+  (trigger `guard_job_inspection`) both refuse changes with `inspection_completed`.
 - Notes ≤ 1,000 characters; summary ≤ 2,000.
 - AI suggestions will never be shown as inspection findings (PRD rule for Phase 8).
 
@@ -57,8 +61,9 @@ system · Air conditioning · Fluids · Exterior · Interior.
 
 ## Security
 
-Rows are only created by `start_inspection()`; clients can update only `outcome` and `notes`, only in
-their own workshop, only with `jobs.manage`, and only until completion.
+Rows are only created by `start_inspection()`; clients can update only `outcome` and `notes` on items
+and `summary` on the inspection, only in their own workshop, only with `jobs.manage`, and only until
+completion.
 
 ## Code
 

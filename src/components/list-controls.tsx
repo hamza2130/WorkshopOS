@@ -23,7 +23,16 @@ export function SearchBox({
       <label htmlFor="q" className="sr-only">
         Search
       </label>
-      <Input id="q" name="q" type="search" defaultValue={q} placeholder={placeholder} className="max-w-md flex-1" autoComplete="off" />
+      {/* Full width on phones so the placeholder and the typed text stay readable. */}
+      <Input
+        id="q"
+        name="q"
+        type="search"
+        defaultValue={q}
+        placeholder={placeholder}
+        className="basis-full sm:max-w-md sm:flex-1 sm:basis-auto"
+        autoComplete="off"
+      />
       <button type="submit" className={buttonClass("secondary")}>
         Search
       </button>

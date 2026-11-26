@@ -15,8 +15,10 @@ import { whatsappLink } from "@/lib/phone";
 import { getRequestTime, isOverdue } from "@/lib/request-time";
 import { getMechanics } from "@/lib/staff";
 import { createClient } from "@/lib/supabase/server";
-import { TASK_STAGES, TASK_STATUS_LABELS } from "@/lib/tasks";
+import { OPEN_TASK, TASK_STAGES, TASK_STATUS_LABELS } from "@/lib/tasks";
 import { loadJobWork } from "@/lib/work";
+import { startEstimate } from "./estimate/actions";
+import { startInspection } from "./inspection/actions";
 import { Attachments, type AttachmentItem } from "./attachments";
 import { NoteForm } from "./note-form";
 import { StatusActions } from "./status-actions";
@@ -113,10 +115,20 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   }));
 
   const actionLabel = new Map((actions.data ?? []).map((a) => [a.code, a.label]));
+  const openTasks = work.tasks.filter((t) => OPEN_TASK.includes(t.status)).length;
+  const planning = (job.status === "approved" || job.status === "awaiting_assignment") && !work.tasks.length;
   // Inspection, estimate and approval moves happen through their own screens ("system").
   const available = (actions.data ?? [])
     .filter((a) => a.from_status === job.status && isPermission(a.permission) && ctx.permissions.has(a.permission))
-    .map((a) => ({ code: a.code, label: a.label, requiresReason: a.requires_reason, tone: a.tone }));
+    // The database refuses quality check while tasks are open; don't offer a button that can only fail.
+    .filter((a) => !(a.code === "finish_work" && openTasks > 0))
+    .map((a) => ({
+      code: a.code,
+      label: a.label,
+      requiresReason: a.requires_reason,
+      // While the work still needs planning, that is the main thing to do — not a status change.
+      tone: planning && a.code === "request_assignment" ? "secondary" : a.tone,
+    }));
   const insp = inspection.data;
   const findingsCount = (insp?.job_inspection_items ?? []).filter((i) => i.outcome === "needs_attention" || i.outcome === "requires_repair").length;
   const latestEstimate = estimates.data?.[0];
@@ -203,23 +215,52 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           <Card className="p-6">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Next step</h2>
             {job.status === "awaiting_inspection" ? (
-              <Link href={`/jobs/${job.id}/inspection`} className={buttonClass("primary", "mb-3")}>
-                {insp ? "Continue inspection" : "Start inspection"}
-              </Link>
+              insp ? (
+                <Link href={`/jobs/${job.id}/inspection`} className={buttonClass("primary", "mb-3")}>
+                  Continue inspection
+                </Link>
+              ) : (
+                <form action={startInspection} className="mb-3">
+                  <input type="hidden" name="jobId" value={job.id} />
+                  <button type="submit" className={buttonClass("primary")}>
+                    Start inspection
+                  </button>
+                </form>
+              )
             ) : job.status === "awaiting_estimate" && ctx.permissions.has("estimates.manage") ? (
-              <Link href={`/jobs/${job.id}/estimate`} className={buttonClass("primary", "mb-3")}>
-                {latestEstimate?.status === "draft" ? "Continue estimate" : "Prepare estimate"}
-              </Link>
+              latestEstimate ? (
+                <Link href={`/jobs/${job.id}/estimate`} className={buttonClass("primary", "mb-3")}>
+                  {latestEstimate.status === "draft" ? "Continue estimate" : "Open estimate"}
+                </Link>
+              ) : (
+                <form action={startEstimate} className="mb-3">
+                  <input type="hidden" name="jobId" value={job.id} />
+                  <button type="submit" className={buttonClass("primary")}>
+                    Prepare estimate
+                  </button>
+                </form>
+              )
             ) : job.status === "awaiting_approval" && ctx.permissions.has("estimates.manage") ? (
               <Link href={`/jobs/${job.id}/estimate`} className={buttonClass("primary", "mb-3")}>
                 Waiting for the customer — view estimate
               </Link>
-            ) : (job.status === "approved" || job.status === "awaiting_assignment") && !work.tasks.length ? (
+            ) : planning ? (
+              <div className="mb-3 space-y-3">
+                <a href="#work" className={buttonClass("primary")}>
+                  Plan the work
+                </a>
+                <p className="text-sm text-slate-600">
+                  Create tasks from the approved work and assign mechanics. The job moves to In progress when the first task
+                  starts.
+                </p>
+              </div>
+            ) : job.status === "in_progress" && openTasks > 0 ? (
               <p className="mb-3 text-sm text-slate-600">
-                Plan the work below and assign mechanics. The job moves to In progress when the first task starts.
+                {openTasks} task{openTasks === 1 ? "" : "s"} still open. When every task is done or cancelled, you can move the
+                job to quality check.
               </p>
             ) : null}
-            <StatusActions key={job.status} jobId={job.id} status={job.status} actions={available} />
+            <StatusActions key={job.status} jobId={job.id} status={job.status} closed={closed} actions={available} />
           </Card>
 
           <Card className="grid gap-4 p-6 sm:grid-cols-2">

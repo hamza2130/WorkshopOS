@@ -10,12 +10,22 @@ export type StatusAction = { code: string; label: string; requiresReason: boolea
 
 const variant = (tone: string): ButtonVariant => (tone === "primary" ? "primary" : tone === "danger" ? "danger" : "secondary");
 
-export function StatusActions({ jobId, status, actions }: { jobId: string; status: JobStatus; actions: StatusAction[] }) {
+export function StatusActions({
+  jobId,
+  status,
+  closed,
+  actions,
+}: {
+  jobId: string;
+  status: JobStatus;
+  closed: boolean;
+  actions: StatusAction[];
+}) {
   const [state, action] = useActionState(changeJobStatus, undefined);
   const [asking, setAsking] = useState<StatusAction | null>(null);
 
   if (actions.length === 0) {
-    return <p className="text-sm text-slate-600">This job is closed. Its history is kept below.</p>;
+    return closed ? <p className="text-sm text-slate-600">This job is closed. Its history is kept below.</p> : null;
   }
 
   return (

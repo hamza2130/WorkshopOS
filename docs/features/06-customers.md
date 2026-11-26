@@ -20,7 +20,7 @@ explicit option for family members who share a number.
 | --- | --- |
 | `/customers` | Search (name, partial phone in any format, `C-0001`), with vehicles, jobs and last visit columns |
 | `/customers/new` | Create; `?then=checkin` makes it step 1 of a check-in |
-| `/customers/[id]` | Profile: contact, click-to-WhatsApp, vehicles with mileage, repair history |
+| `/customers/[id]` | Profile: contact, click-to-WhatsApp, vehicles with mileage and a **New job card** button per active vehicle (for `jobs.manage`), repair history |
 | `/customers/[id]/edit` | Edit |
 
 ## How it works

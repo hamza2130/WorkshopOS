@@ -45,14 +45,25 @@ export async function saveInspection(_: ActionState | undefined, formData: FormD
     }
   }
 
+  const summary = String(formData.get("summary") ?? "").trim().slice(0, 2000);
   if (formData.get("intent") === "complete") {
-    const summary = String(formData.get("summary") ?? "").trim().slice(0, 2000);
     const { error } = await supabase.rpc("complete_inspection", { p_job: jobId, p_summary: summary || undefined });
     if (error) return { error: error.message === "inspection_completed" ? "This inspection is already complete." : "We couldn't complete the inspection." };
     revalidatePath(`/jobs/${jobId}`);
     redirect(`/jobs/${jobId}`);
   }
 
+  // The summary is kept as a draft too, so "Save progress" never loses it.
+  const { data: insp } = await supabase.from("job_inspections").select("summary").eq("id", inspectionId).maybeSingle();
+  const summaryChanged = (insp?.summary ?? "") !== summary;
+  if (summaryChanged) {
+    const { error } = await supabase.from("job_inspections").update({ summary: summary || null }).eq("id", inspectionId);
+    if (error) {
+      return { error: error.message === "inspection_completed" ? "This inspection is already complete." : "We couldn't save the summary." };
+    }
+  }
+  const count = changes.length + (summaryChanged ? 1 : 0);
+
   revalidatePath(`/jobs/${jobId}/inspection`);
-  return { success: changes.length ? `Saved ${changes.length} change${changes.length === 1 ? "" : "s"}.` : "Nothing changed." };
+  return { success: count ? `Saved ${count} change${count === 1 ? "" : "s"}.` : "Nothing changed." };
 }
