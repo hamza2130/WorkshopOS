@@ -54,7 +54,9 @@ line belong to the job, attribution forced to the signed-in user). Only `removed
 `tests/rls/tasks.test.ts` → "lets assigned mechanics add internal notes and parts, nowhere else":
 approved part, free text, wrong job refused, edits refused, removal attributed.
 
+Since Phase 6, parts recorded here that weren't on the approved estimate are offered on the draft
+invoice with a one-tap *Add to invoice* — see [invoices](17-invoices-and-payments.md).
+
 ## Not yet built
 
 - Stock deduction and low-stock alerts (Phase 7).
-- Billing parts used that weren't on the estimate (Phase 6 invoice review).

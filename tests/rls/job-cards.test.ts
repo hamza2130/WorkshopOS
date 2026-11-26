@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Database } from "@/lib/supabase/database.types";
 import { addMember, admin, createWorkshop, run, userClient, type Client, type TestUser } from "./helpers";
-import { approveThroughEstimate } from "./workflow";
+import { approveThroughEstimate, billJob } from "./workflow";
 
 type JobStatus = Database["public"]["Enums"]["job_status"];
 
@@ -100,6 +100,8 @@ describe("every status change is timestamped (Phase 3 gate)", () => {
       ["deliver", "ready_for_delivery"],
     ];
     for (const [action, from] of manual) {
+      // Phase 6: a vehicle leaves only with an issued invoice (made by the owner here).
+      if (action === "deliver") await billJob(ownerA.client, job);
       const res = await move(advisorA.client, job, action, from);
       expect(res.error, action).toBeNull();
     }

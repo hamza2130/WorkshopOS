@@ -1,0 +1,38 @@
+---
+title: Invoice lifecycle — a void is audited, never hard-deleted
+---
+stateDiagram-v2
+  state "Draft (no number)" as draft
+  state "Issued" as issued
+  state "Void" as void
+
+  state issued {
+    state "Unpaid" as unpaid
+    state "Part paid" as part_paid
+    state "Paid" as paid
+    [*] --> unpaid
+    unpaid --> part_paid: Payment
+    part_paid --> paid: Payment of the balance
+    unpaid --> paid: Payment in full
+    paid --> part_paid: Refund
+    part_paid --> unpaid: Refund of everything
+  }
+
+  [*] --> draft: Create invoice (approved lines copied in)
+  draft --> issued: Issue (next INV number, lines frozen, customer and vehicle copied)
+  draft --> void: Void * (no number used)
+  issued --> void: Void * (only when nothing is held: refund first)
+  void --> [*]
+
+  note right of void
+    * A reason is required.
+    The row, its number, who voided it, when and why
+    stay forever. Delete is refused for everyone,
+    including the service key (trigger guard_invoice).
+    A corrected invoice can then be made for the job.
+  end note
+  note left of draft
+    Draft lines can be edited, added or removed.
+    Lines not from the approved estimate are marked
+    "Added at billing" or "Part used, not on estimate".
+  end note

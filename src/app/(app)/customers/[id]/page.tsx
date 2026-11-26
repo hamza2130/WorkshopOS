@@ -6,6 +6,8 @@ import { JobHistoryList } from "@/components/job-history-list";
 import { Alert, Badge, buttonClass, Card, PageHeader } from "@/components/ui";
 import { requirePageAccess } from "@/lib/auth/session";
 import { formatDate } from "@/lib/format";
+import { paymentState, PAYMENT_STATE_LABELS, PAYMENT_STATE_TONES } from "@/lib/invoices";
+import { formatMoney } from "@/lib/money";
 import { isUuid, withParams } from "@/lib/params";
 import { whatsappLink } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +22,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const tz = ctx.workshop.timezone;
 
   const supabase = await createClient();
-  const [{ data: c }, { data: vehicles }, { data: jobs }] = await Promise.all([
+  const [{ data: c }, { data: vehicles }, { data: jobs }, { data: invoices }] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).eq("workshop_id", ctx.workshop.workshopId).maybeSingle(),
     supabase
       .from("vehicles")
@@ -33,6 +35,12 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       .select("id, job_number, status, check_in_at, check_in_mileage, complaint, vehicles(registration_number)")
       .eq("customer_id", id)
       .order("check_in_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, status, total, amount_paid, balance_due, issued_at, created_at, job:job_cards(job_number)")
+      .eq("customer_id", id)
+      .order("created_at", { ascending: false })
       .limit(50),
   ]);
   if (!c) notFound();
@@ -51,6 +59,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const wa = c.whatsapp ? whatsappLink(c.whatsapp, `Assalam-o-Alaikum ${c.name}, this is ${ctx.workshop.workshopName}.`) : null;
   const isOwner = ctx.workshop.role === "owner";
   const canOpenJobs = ctx.permissions.has("jobs.manage");
+  const owed = (invoices ?? []).filter((i) => i.status === "issued").reduce((sum, i) => sum + Number(i.balance_due), 0);
 
   return (
     <>
@@ -173,9 +182,40 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               timeZone={tz}
               empty="No job cards yet."
             />
-            <p className="border-t border-slate-100 px-6 py-3 text-xs text-slate-500">
-              Estimates, invoices, payments and balances will appear here as those modules ship.
-            </p>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-200 px-6 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">Invoices ({invoices?.length ?? 0})</h2>
+              <span className={`text-sm ${owed > 0 ? "font-medium text-amber-800" : "text-slate-600"}`}>
+                {owed > 0 ? `${formatMoney(owed, ctx.workshop.currency)} owed` : "Nothing owed"}
+              </span>
+            </div>
+            {invoices?.length ? (
+              <ul className="divide-y divide-slate-100">
+                {invoices.map((i) => {
+                  const st = paymentState(i.status, Number(i.total), Number(i.amount_paid));
+                  return (
+                    <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-3 text-sm">
+                      <div>
+                        <Link href={`/invoices/${i.id}`} className="font-medium text-slate-900 hover:text-brand-700 hover:underline">
+                          {i.invoice_number ?? "Draft"}
+                        </Link>
+                        <span className="ml-2 text-slate-600">
+                          {i.job?.job_number} · {formatDate(i.issued_at ?? i.created_at, tz)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="tabular-nums text-slate-800">{formatMoney(i.total, ctx.workshop.currency)}</span>
+                        <Badge tone={PAYMENT_STATE_TONES[st]}>{PAYMENT_STATE_LABELS[st]}</Badge>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="px-6 py-4 text-sm text-slate-600">No invoices yet.</p>
+            )}
           </Card>
         </div>
       </div>

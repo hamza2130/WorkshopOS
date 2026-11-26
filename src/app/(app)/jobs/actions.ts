@@ -89,6 +89,8 @@ const STATUS_ERRORS: Record<string, string> = {
   reason_required: "Give a reason for this change.",
   invalid_transition: "That step isn't available for this job any more.",
   tasks_open: "Some tasks aren't finished yet. Complete or cancel them before quality check.",
+  invoice_required: "Issue the invoice before the vehicle is delivered.",
+  invoice_open: "This job has an invoice. Void it before cancelling the job.",
 };
 
 export async function changeJobStatus(_: ActionState | undefined, formData: FormData): Promise<ActionState> {

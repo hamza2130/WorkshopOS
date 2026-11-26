@@ -42,6 +42,7 @@ Owner-only permissions can never be granted as extras (enforced in code and by a
 | Estimates, lines, decisions | `estimates.manage`, `jobs.manage`, `invoices.manage`, `payments.record` | `estimates.manage` (decisions only via the customer link or "record decision") |
 | Labour and parts catalogue | `estimates.manage`, `workshop.settings`, `invoices.manage` (+ `inventory.manage` for parts) | `workshop.settings` (+ `inventory.manage` for parts) |
 | Tasks, task history | `jobs.manage`, `invoices.manage`, `payments.record`; mechanics on jobs where they have a task | details: `jobs.manage`; status: assignee or `jobs.manage` via `update_task_status` |
+| Invoices, lines, payments | `invoices.manage`, `payments.record`, `jobs.manage` (advisors read-only) | drafts and lines: `invoices.manage`; issue, void, refund: `invoices.manage` via functions; payments: `payments.record` via `record_payment` — see [invoices](17-invoices-and-payments.md) |
 | Parts used | as tasks, plus `inventory.manage` | advisors; assigned mechanics while the job is open |
 | Assigned job view (vehicle, complaint, findings, approved work — no prices or customer details) | `jobs.view_assigned` on jobs where they have a task, via `get_assigned_job` | — |
 | Notifications | the recipient only | written by the system only |

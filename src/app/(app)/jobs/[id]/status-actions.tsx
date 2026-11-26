@@ -6,7 +6,14 @@ import { buttonClass, type ButtonVariant } from "@/components/ui";
 import type { JobStatus } from "@/lib/job-status";
 import { changeJobStatus } from "../actions";
 
-export type StatusAction = { code: string; label: string; requiresReason: boolean; tone: string };
+export type StatusAction = {
+  code: string;
+  label: string;
+  requiresReason: boolean;
+  tone: string;
+  /** A one-way move: ask "are you sure?" with this text before doing it. */
+  confirm?: string;
+};
 
 const variant = (tone: string): ButtonVariant => (tone === "primary" ? "primary" : tone === "danger" ? "danger" : "secondary");
 
@@ -37,18 +44,24 @@ export function StatusActions({
       {asking ? (
         <div className="space-y-3 rounded-md bg-slate-50 p-4 ring-1 ring-slate-200">
           <input type="hidden" name="action" value={asking.code} />
-          <label htmlFor="reason" className="block text-sm font-medium text-slate-800">
-            {asking.label} — reason (shown on the timeline)
-          </label>
-          <textarea
-            id="reason"
-            name="reason"
-            rows={2}
-            required
-            autoFocus
-            maxLength={500}
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
-          />
+          {asking.requiresReason ? (
+            <>
+              <label htmlFor="reason" className="block text-sm font-medium text-slate-800">
+                {asking.label} — reason (shown on the timeline)
+              </label>
+              <textarea
+                id="reason"
+                name="reason"
+                rows={2}
+                required
+                autoFocus
+                maxLength={500}
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              />
+            </>
+          ) : (
+            <p className="text-sm text-slate-800">{asking.confirm}</p>
+          )}
           <div className="flex flex-wrap gap-2">
             <SubmitButton variant={variant(asking.tone)} pendingText="Saving…">
               Confirm: {asking.label}
@@ -61,7 +74,7 @@ export function StatusActions({
       ) : (
         <div className="flex flex-wrap gap-2">
           {actions.map((a) =>
-            a.requiresReason ? (
+            a.requiresReason || a.confirm ? (
               <button key={a.code} type="button" onClick={() => setAsking(a)} className={buttonClass(variant(a.tone))}>
                 {a.label}…
               </button>

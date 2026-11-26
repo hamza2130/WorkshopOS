@@ -1,6 +1,6 @@
 # 05 · Activity log
 
-**Phases 1–5 · Built**
+**Phases 1–6 · Built**
 
 ## What it does
 
@@ -23,6 +23,7 @@ Users with `activity.view` — owners and service advisors. Reached from **Emplo
 | Job cards | opened, details updated, status changed (from → to, with reason), attachment removed |
 | Inspections and estimates | inspection completed; estimate version started (with revision reason), sent, new link issued, decided (shown as "Customer responded…" when it came from the link) |
 | Tasks and parts used | task added (with assignee), task moved (from → to, with reason), task reassigned, part used recorded or removed (quantity × description) |
+| Invoices and money | draft started, invoice issued (with total), voided (with reason), payment recorded (amount, method), refund (amount, method, reason) |
 | Catalogue | labour service or part added or updated |
 
 Every event is shown as a sentence ("moved task “Brake service” on JC-0001 from in progress to done").

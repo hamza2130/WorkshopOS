@@ -17,7 +17,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/estimates", label: "Estimates", anyOf: ["estimates.manage"] },
   { href: "/inventory", label: "Inventory", anyOf: ["inventory.manage"], phase: 7 },
   { href: "/employees", label: "Employees", anyOf: ["staff.manage"] },
-  { href: "/invoices", label: "Invoices", anyOf: ["invoices.manage", "payments.record"], phase: 6 },
+  // Advisors see billing too (read-only): they hand cars back and need to know what's owed.
+  { href: "/invoices", label: "Invoices", anyOf: ["invoices.manage", "payments.record", "jobs.manage"] },
   { href: "/reports", label: "Reports", anyOf: ["reports.operational", "reports.financial"], phase: 9 },
   { href: "/settings", label: "Settings", anyOf: ["workshop.settings"] },
 ];

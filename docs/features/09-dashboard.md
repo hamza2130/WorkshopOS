@@ -1,6 +1,6 @@
 # 09 · Dashboard
 
-**Phases 1–3 · Built (job board); finance and stock tiles come later**
+**Phases 1–6 · Built (job board, money today); stock tiles come later**
 
 ## What it does
 
@@ -30,7 +30,10 @@ are dimmed so the busy ones stand out.
 ## Rules
 
 The PRD requires **invoiced revenue and cash collected to be shown separately, never labelled as the
-same thing**. This applies when finance tiles arrive in Phase 6.
+same thing**. Since Phase 6, owners and accountants (`invoices.manage`, `payments.record` or
+`reports.financial`) see **Money today**: *Invoiced today* (issued invoices, in the workshop's time
+zone), *Collected today* (payments less refunds) and *Outstanding* (every unpaid balance, all dates,
+linking to the unpaid invoices). The three numbers are never added together.
 
 ## Code
 
@@ -38,6 +41,6 @@ same thing**. This applies when finance tiles arrive in Phase 6.
 
 ## Not yet built
 
-- Today's invoiced amount and payments collected (Phase 6).
-- Outstanding balances (Phase 6) and low-stock alerts (Phase 7).
+- Low-stock alerts (Phase 7).
+- A "needs attention" list (overdue cars, blocked tasks, old unpaid invoices) — proposed for the pilot.
 - Date range and employee filters (Phase 9).

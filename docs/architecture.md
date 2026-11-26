@@ -59,7 +59,8 @@ so there is no server cache that could serve one workshop's data to another.
   those moves carry the permission `system`, which no one holds, so no button can fake them.
 - **Guard triggers** enforce business rules for every client: duplicate phones and plates, the last
   active owner, mileage that goes backwards, edits to closed job cards, job and task status history,
-  and quality check while tasks are still open.
+  quality check while tasks are still open, delivery without an issued invoice, and any change to an
+  issued or void invoice or to the payments ledger.
 - The active workshop is chosen by an `active_workshop` cookie, but membership is re-verified on every
   request; the cookie is only a preference.
 
@@ -72,12 +73,14 @@ Migrations live in `supabase/migrations/`, one per phase. Generated TypeScript t
 
 Conventions:
 
-- UUID primary keys; money will use `numeric` (never floating point).
+- UUID primary keys; money uses `numeric(12,2)` (never floating point), and totals are computed in the
+  database (`recalculate_estimate`, `recalculate_invoice`), never trusted from the client.
 - Timestamps are stored in UTC and shown in the workshop's time zone (`src/lib/format.ts`,
   `src/lib/datetime.ts` for `datetime-local` inputs).
 - Nothing is hard-deleted from the UI. Customers and vehicles are archived (owner only); attachments are
-  marked removed; history tables are append-only.
-- Per-workshop numbering (C-0001, JC-0001, later INV-0001) uses `workshop_counters` via
+  marked removed; history tables are append-only. Invoices are voided, never deleted, and payments and
+  refunds are an append-only ledger — both refuse deletes even for the service key (Phase 6).
+- Per-workshop numbering (C-0001, JC-0001, INV-0001 — given when an invoice is issued, not drafted) uses `workshop_counters` via
   `next_workshop_number()`, inside the same transaction as the insert, so rejected saves don't burn numbers.
 
 ## Audit trail
@@ -95,7 +98,7 @@ with other Supabase projects. `npm run db:seed-dev` creates test accounts.
 
 | Suite | Command | Covers |
 | --- | --- | --- |
-| Unit | `npm test` | Permission matrix, validation schemas, normalisers, time zones, navigation |
+| Unit | `npm test` | Permission matrix, validation schemas, normalisers, time zones, navigation, invoice PDFs |
 | Database | `npm run test:rls` | Tenant isolation, roles, duplicate rules, job status history — against a real database |
 | Manual | browser | Each phase's flows are exercised in the browser before the phase is called done |
 
@@ -109,3 +112,4 @@ that proves it:
 | 3 | Every status change is timestamped | `tests/rls/job-cards.test.ts` |
 | 4 | A revised estimate needs fresh approval | `tests/rls/estimates.test.ts` |
 | 5 | A blocked task always records a reason | `tests/rls/tasks.test.ts` |
+| 6 | A void is audited, never hard-deleted | `tests/rls/invoices.test.ts` |

@@ -11,7 +11,7 @@ explicit option for family members who share a number.
 ## Who can use it
 
 - **Manage:** `customers.manage` — owners and advisors.
-- **Read only:** cashiers (needed for invoices later).
+- **Read only:** cashiers (for invoices).
 - **Archive / restore:** owners only.
 
 ## Screens
@@ -20,7 +20,7 @@ explicit option for family members who share a number.
 | --- | --- |
 | `/customers` | Search (name, partial phone in any format, `C-0001`), with vehicles, jobs and last visit columns |
 | `/customers/new` | Create; `?then=checkin` makes it step 1 of a check-in |
-| `/customers/[id]` | Profile: contact, click-to-WhatsApp, vehicles with mileage and a **New job card** button per active vehicle (for `jobs.manage`), repair history |
+| `/customers/[id]` | Profile: contact, click-to-WhatsApp, vehicles with mileage and a **New job card** button per active vehicle (for `jobs.manage`), repair history, invoices with what the customer owes |
 | `/customers/[id]/edit` | Edit |
 
 ## How it works
@@ -77,7 +77,6 @@ isolation from other workshops. Unit tests: `phone.test.ts`, `record-schemas.tes
 
 ## Not yet built
 
-- Estimates, invoices, payments and outstanding balance on the profile (Phases 4–6).
 - Communication history (Phase 6+).
 - Merging two customer records (deliberately not automatic, per the PRD).
 - Importing customers from a spreadsheet.

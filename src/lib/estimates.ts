@@ -110,6 +110,9 @@ const quantity = text(12)
   .transform(Number)
   .refine((v) => v > 0, "Quantity must be more than 0.");
 
+// Shared with invoice lines and payments (src/lib/invoices.ts).
+export { text as textField, money as moneyField, quantity as quantityField };
+
 export const lineSchema = z
   .object({
     kind: z.enum(["labour", "part", "other"]),

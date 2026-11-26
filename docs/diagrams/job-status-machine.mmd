@@ -32,12 +32,12 @@ stateDiagram-v2
   in_progress --> quality_check: Work complete (all tasks done or cancelled)
   quality_check --> ready_for_delivery: Quality check passed
   quality_check --> in_progress: Send back for rework *
-  ready_for_delivery --> delivered: Deliver to customer
+  ready_for_delivery --> delivered: Deliver to customer (needs an issued invoice)
   delivered --> [*]
 
   in_progress --> on_hold: Put on hold * (from any active status)
   on_hold --> in_progress: Resume (returns to the status it was in)
-  awaiting_estimate --> cancelled: Cancel * (from any status before delivery)
+  awaiting_estimate --> cancelled: Cancel * (any status before delivery; not while an invoice is live)
   cancelled --> [*]
 
   note left of awaiting_inspection

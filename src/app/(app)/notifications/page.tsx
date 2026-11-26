@@ -22,7 +22,7 @@ export default async function NotificationsPage() {
     <>
       <PageHeader
         title="Notifications"
-        description="Updates on your jobs and tasks: estimate decisions, new and blocked work, finished and cancelled jobs."
+        description="Updates on your jobs and tasks: estimate decisions, new and blocked work, finished, paid and cancelled jobs."
         actions={
           unread ? (
             <form action={markAllRead}>

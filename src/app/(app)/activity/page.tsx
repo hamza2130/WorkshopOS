@@ -8,6 +8,8 @@ import { formatDateTime } from "@/lib/format";
 import { isJobStatus, JOB_STATUS_LABELS } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 import { TASK_STATUS_LABELS, type TaskStatus } from "@/lib/tasks";
+import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/invoices";
+import { formatMoney } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Activity" };
 
@@ -26,6 +28,11 @@ type Meta = {
   assignee?: string | null;
   description?: string;
   quantity?: number;
+  invoice_number?: string | null;
+  job_number?: string;
+  total?: number;
+  amount?: number;
+  method?: string;
 };
 
 const statusLabel = (s?: string) => (s && isJobStatus(s) ? JOB_STATUS_LABELS[s] : s ?? "?");
@@ -36,11 +43,13 @@ type Names = {
   customers: Map<string, string>;
   vehicles: Map<string, string>;
   jobs: Map<string, string>;
+  invoices: Map<string, string>;
+  currency: string;
 };
 
-const FALLBACK = { customers: "a customer", vehicles: "a vehicle", jobs: "a job card" };
+const FALLBACK = { customers: "a customer", vehicles: "a vehicle", jobs: "a job card", invoices: "an invoice" };
 
-function record(kind: "customers" | "vehicles" | "jobs", id: string | null | undefined, names: Names): ReactNode {
+function record(kind: "customers" | "vehicles" | "jobs" | "invoices", id: string | null | undefined, names: Names): ReactNode {
   if (!id) return "a record";
   const label = names[kind].get(id) ?? FALLBACK[kind];
   return (
@@ -54,6 +63,8 @@ const roleLabel = (r?: string) => (r && r in ROLE_LABELS ? ROLE_LABELS[r as Role
 
 function describe(action: string, entityId: string | null, meta: Meta, names: Names, byCustomer: boolean): ReactNode {
   const subject = (meta.user_id && names.people.get(meta.user_id)) || "a member";
+  const money = (n?: number) => formatMoney(n ?? 0, names.currency);
+  const methodLabel = (m?: string) => (m && m in PAYMENT_METHOD_LABELS ? PAYMENT_METHOD_LABELS[m as PaymentMethod] : "");
   const fields = meta.fields?.map((f) => f.replaceAll("_", " ")).join(", ");
   switch (action) {
     case "workshop.created":
@@ -173,6 +184,34 @@ function describe(action: string, entityId: string | null, meta: Meta, names: Na
           removed {Number(meta.quantity)} × {meta.description} from the parts used on {record("jobs", entityId, names)}
         </>
       );
+    case "invoice.created":
+      return <>started a draft invoice for {meta.job_number ?? "a job"} ({record("invoices", entityId, names)})</>;
+    case "invoice.issued":
+      return (
+        <>
+          issued invoice {record("invoices", entityId, names)} for {meta.job_number} · {money(meta.total)}
+        </>
+      );
+    case "invoice.voided":
+      return (
+        <>
+          voided invoice {record("invoices", entityId, names)}
+          {meta.reason ? ` — “${meta.reason}”` : ""}
+        </>
+      );
+    case "payment.recorded":
+      return (
+        <>
+          recorded a payment of {money(meta.amount)} ({methodLabel(meta.method)}) on {record("invoices", entityId, names)}
+        </>
+      );
+    case "payment.refunded":
+      return (
+        <>
+          refunded {money(meta.amount)} ({methodLabel(meta.method)}) on {record("invoices", entityId, names)}
+          {meta.reason ? ` — “${meta.reason}”` : ""}
+        </>
+      );
     case "labour_item.created":
     case "part.created":
       return <>added a {action.startsWith("part") ? "part" : "labour service"} to the catalogue</>;
@@ -202,18 +241,22 @@ export default async function ActivityPage() {
   const customerIds = ids((e, m) => (e.entity_type === "customer" ? [e.entity_id] : e.action === "vehicle.transferred" ? [m.from, m.to] : []));
   const vehicleIds = ids((e) => (e.entity_type === "vehicle" ? [e.entity_id] : []));
   const jobIds = ids((e) => (e.entity_type === "job_card" ? [e.entity_id] : []));
+  const invoiceIds = ids((e) => (e.entity_type === "invoice" ? [e.entity_id] : []));
 
-  const [people, customers, vehicles, jobs] = await Promise.all([
+  const [people, customers, vehicles, jobs, invoices] = await Promise.all([
     personIds.length ? supabase.from("profiles").select("id, full_name, email").in("id", personIds) : { data: [] },
     customerIds.length ? supabase.from("customers").select("id, name").in("id", customerIds) : { data: [] },
     vehicleIds.length ? supabase.from("vehicles").select("id, registration_number").in("id", vehicleIds) : { data: [] },
     jobIds.length ? supabase.from("job_cards").select("id, job_number").in("id", jobIds) : { data: [] },
+    invoiceIds.length ? supabase.from("invoices").select("id, invoice_number").in("id", invoiceIds) : { data: [] },
   ]);
   const names: Names = {
     people: new Map((people.data ?? []).map((p) => [p.id, p.full_name || p.email])),
     customers: new Map((customers.data ?? []).map((c) => [c.id, c.name])),
     vehicles: new Map((vehicles.data ?? []).map((v) => [v.id, v.registration_number])),
     jobs: new Map((jobs.data ?? []).map((j) => [j.id, j.job_number])),
+    invoices: new Map((invoices.data ?? []).map((i) => [i.id, i.invoice_number ?? "a draft invoice"])),
+    currency: ctx.workshop.currency,
   };
 
   return (
